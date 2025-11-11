@@ -1,6 +1,6 @@
 provider: oracle
 model: xai.grok-4-fast-non-reasoning
-theme: synthwave
+theme: dracula
 show_tool_output: false
 
 tools:
