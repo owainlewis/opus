@@ -1,0 +1,27 @@
+# Example tool using uv with inline script dependencies
+# This shows how to run Python code with inline dependency specifications
+
+name: analyze_json
+description: Analyze JSON data using Python with automatic dependency management via uv
+
+# uv can run Python code with inline dependencies (PEP 723)
+# The Python file should have a comment block like:
+# # /// script
+# # dependencies = ["requests", "pandas"]
+# # ///
+script: uv run {script_file} {json_file}
+
+parameters:
+  type: object
+  properties:
+    script_file:
+      type: string
+      description: Path to Python script with inline dependencies
+    json_file:
+      type: string
+      description: Path to JSON file to analyze
+  required:
+    - script_file
+    - json_file
+
+timeout: 120

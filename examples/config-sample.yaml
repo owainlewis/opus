@@ -1,0 +1,38 @@
+# Example Opus Configuration
+# Copy this to ~/.opus/config.yaml and customize
+
+# LLM Provider Configuration
+provider: anthropic
+model: claude-sonnet-4-20250514
+
+# Agent Behavior
+max_iterations: 25  # Maximum conversation turns per request
+default_timeout: 30  # Default timeout for tool execution (seconds)
+
+# Tools Configuration
+tools:
+  # Built-in tools
+  bash:
+    enabled: true
+    approval: true  # Require user approval before running bash commands
+
+  read:
+    enabled: true
+    approval: false  # Read operations don't need approval
+
+  fetch:
+    enabled: true
+    approval: false  # Web fetch doesn't need approval
+
+  # Custom tools - reference external YAML files
+  # See examples/tools/ for examples of custom tool definitions
+  #
+  # Custom tools support JSON Schema for parameters, including:
+  # - enum: Constrain values to specific options (helps LLM choose correctly)
+  # - default: Provide default values for optional parameters
+  # - required: Mark which parameters are mandatory
+  #
+  # fetch_logs:
+  #   enabled: true
+  #   approval: false
+  #   source: ./tools/fetch-logs.yaml

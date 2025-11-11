@@ -1,0 +1,35 @@
+# Example custom tool: Fetch Logs
+# This simulates fetching logs from a logging service
+# In a real scenario, this would call a Splunk/Datadog/CloudWatch API
+#
+# This example demonstrates using 'enum' to constrain parameter values.
+# The LLM will know the exact valid values and can prompt users to choose.
+
+name: fetch_logs
+description: Fetch application logs from the logging service for a specific time range and application
+
+# Example script - replace with your actual log fetching command
+# This could be a Python script, bash script, or any executable
+# Note: This script uses positional arguments, not flags
+script: uv run fetch_logs.py {app} {from_time} {to_time}
+
+parameters:
+  type: object
+  properties:
+    app:
+      type: string
+      enum: ["api", "worker", "scheduler"]
+      description: Application name to fetch logs from
+    from_time:
+      type: string
+      description: Start time as timestamp string (e.g., "2025-01-01 12:00:00")
+    to_time:
+      type: string
+      description: End time as timestamp string (e.g., "2025-01-01 13:00:00")
+      default: "2025-12-31 23:59:59"
+  required:
+    - app
+    - from_time
+
+# Custom timeout for this tool (60 seconds)
+timeout: 60

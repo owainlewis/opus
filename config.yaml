@@ -1,0 +1,25 @@
+provider: openai
+model: gpt-4o-mini
+
+tools:
+  bash:
+    enabled: true
+    approval: true
+
+  read:
+    enabled: true
+    approval: false
+
+  fetch:
+    enabled: true
+    approval: false
+
+  recipe:
+    enabled: true
+    approval: true  # Recipes can execute multiple steps
+
+  fetch_logs:
+    enabled: true
+    approval: false
+    source: ./examples/tools/fetch-logs.yaml
+
