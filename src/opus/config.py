@@ -40,6 +40,9 @@ class OpusConfig:
         self.max_retry_attempts = 2  # Hardcoded - rarely needs adjustment
         self.default_timeout = config_data.get("default_timeout", 30)
 
+        # UI settings
+        self.theme = config_data.get("theme", "default")
+
         # Parse tools configuration
         self.tools_config = config_data.get("tools", {})
 

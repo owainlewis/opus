@@ -18,6 +18,7 @@ from opus.console_helper import (
     print_tool_error,
     ToolExecutionStatus,
     ThinkingStatus,
+    set_theme,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ class OpusAgent:
         """
         self.config = OpusConfig.from_yaml(config_path)
         self.messages = []
+
+        # Set UI theme from config
+        set_theme(self.config.theme)
 
         # Initialize tool executor with default timeout
         self.executor = ToolExecutor(timeout=self.config.default_timeout)

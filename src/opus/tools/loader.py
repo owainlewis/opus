@@ -99,8 +99,8 @@ class ToolLoader:
                     logger.error(error_msg)
                     return None, error_msg
 
-            # Add tool path for executor to use as working directory
-            tool_def["tool_path"] = tool_path.parent
+            # Add tool path for executor to use as working directory (convert to string for JSON serialization)
+            tool_def["tool_path"] = str(tool_path.parent)
 
             # Ensure parameters has proper structure
             if "parameters" not in tool_def:
@@ -129,7 +129,7 @@ class ToolLoader:
         if tool_name == "fetch":
             from opus.tools.fetch import FETCH_TOOL_DEFINITION, execute_fetch
             tool_def = FETCH_TOOL_DEFINITION.copy()
-            tool_def["tool_path"] = Path.cwd()
+            tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_fetch  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
             return tool_def
@@ -138,7 +138,7 @@ class ToolLoader:
         if tool_name == "recipe":
             from opus.tools.recipe_tool import RECIPE_TOOL_DEFINITION, execute_recipe_tool
             tool_def = RECIPE_TOOL_DEFINITION.copy()
-            tool_def["tool_path"] = Path.cwd()
+            tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_recipe_tool  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
             return tool_def
@@ -159,7 +159,7 @@ class ToolLoader:
                     },
                     "required": ["command"]
                 },
-                "tool_path": Path.cwd(),
+                "tool_path": str(Path.cwd()),
             },
             "read": {
                 "name": "read",
@@ -175,7 +175,7 @@ class ToolLoader:
                     },
                     "required": ["file"]
                 },
-                "tool_path": Path.cwd(),
+                "tool_path": str(Path.cwd()),
             }
         }
 

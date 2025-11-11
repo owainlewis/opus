@@ -1,10 +1,11 @@
-provider: openai
-model: gpt-4o-mini
+provider: oracle
+model: xai.grok-4-fast-non-reasoning
+theme: dracula
 
 tools:
   bash:
     enabled: true
-    approval: true
+    approval: false
 
   read:
     enabled: true
@@ -20,6 +21,6 @@ tools:
 
   fetch_logs:
     enabled: true
-    approval: false
+    approval: true
     source: ./examples/tools/fetch-logs.yaml
 

@@ -5,9 +5,8 @@ from typing import List, Dict
 
 from opus.config import OpusConfig
 from opus.providers.base import LLMProvider
-from opus.providers.anthropic_provider import AnthropicProvider
-from opus.providers.openai_provider import OpenAIProvider
-from opus.providers.gemini_provider import GeminiProvider
+from opus.providers.litellm_provider import LiteLLMProvider
+from opus.providers.oracle_provider import OracleProvider
 
 logger = logging.getLogger(__name__)
 
@@ -18,34 +17,32 @@ def create_provider(
     system_prompt: str,
 ) -> LLMProvider:
     """
-    Create an LLM provider instance.
+    Create an LLM provider instance based on configuration.
+
+    Supports:
+    - oracle: Native Oracle GenAI provider (recommended for OCI GenAI)
+    - litellm: Universal provider supporting 100+ LLM providers
 
     Args:
-        config: Opus configuration
+        config: Opus configuration with provider and model
         tools: List of tool definitions
         system_prompt: System prompt for the agent
 
     Returns:
-        Initialized LLM provider
+        Initialized provider instance
 
-    Raises:
-        ValueError: If provider is not supported
+    Note:
+        For Oracle GenAI, use provider: oracle instead of litellm
+        to avoid dependency issues and get better native support.
     """
-    provider_name = config.provider.lower()
+    provider = config.provider.lower() if hasattr(config, 'provider') else 'litellm'
 
-    logger.info(f"Initializing {provider_name} provider with model {config.model}")
-
-    if provider_name == "anthropic":
-        return AnthropicProvider(config.model, tools, system_prompt)
-    elif provider_name == "openai":
-        return OpenAIProvider(config.model, tools, system_prompt)
-    elif provider_name in ["gemini", "google"]:
-        return GeminiProvider(config.model, tools, system_prompt)
+    if provider == 'oracle':
+        logger.info(f"Initializing Oracle GenAI provider with model {config.model}")
+        return OracleProvider(config.model, tools, system_prompt)
     else:
-        raise ValueError(
-            f"Unsupported provider: {provider_name}. "
-            f"Supported providers: anthropic, openai, gemini"
-        )
+        logger.info(f"Initializing LiteLLM provider with model {config.model}")
+        return LiteLLMProvider(config.model, tools, system_prompt)
 
 
 # Backwards compatibility alias

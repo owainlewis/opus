@@ -21,6 +21,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Dependency lock files
+uv.lock
+
 # Virtual environments
 venv/
 env/

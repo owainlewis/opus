@@ -10,7 +10,7 @@ from rich.prompt import Prompt
 from rich.text import Text
 
 from opus.agent import OpusAgent
-from opus.console_helper import print_markdown, console
+from opus.console_helper import print_markdown, console, get_current_theme
 from opus.ui import create_simple_ui
 
 
@@ -172,12 +172,14 @@ async def repl(agent: OpusAgent):
 
     while True:
         try:
+            theme = get_current_theme()
+
             # Thin separator like in the reference
-            console.rule(style="dim")
+            console.rule(style=theme.border)
             console.print()
 
             # Get user input - minimal prompt (>:)
-            user_input = Prompt.ask("[bold cyan]>:[/bold cyan]").strip()
+            user_input = Prompt.ask(f"[{theme.prompt}]>:[/{theme.prompt}]").strip()
 
             if not user_input:
                 continue
@@ -229,7 +231,7 @@ async def repl(agent: OpusAgent):
     "-m",
     help="Send a single message and exit (non-interactive mode)"
 )
-def main(ctx, config: str, verbose: bool, message: str):
+def cli(ctx, config: str, verbose: bool, message: str):
     """
     Opus - Terminal-based AI agent for software engineering automation
     """
@@ -260,20 +262,10 @@ def main(ctx, config: str, verbose: bool, message: str):
             asyncio.run(repl(agent))
 
     except FileNotFoundError as e:
-        console.print(f"[red]Error: {e}[/red]")
-        console.print("\n[yellow]To get started:[/yellow]")
-        console.print(f"1. Create config directory: mkdir -p {opus_dir}")
-        console.print(f"2. Create a config.yaml file at {opus_dir}/config.yaml")
-        console.print("\n[dim]Example config.yaml:[/dim]")
-        console.print("""
-provider: anthropic
-model: claude-sonnet-4-20250514
-
-tools:
-  bash:
-    enabled: true
-    approval: false
-""")
+        console.print(f"[red]Error: Configuration file not found[/red]")
+        console.print(f"\n[yellow]Run the following command to set up Opus:[/yellow]")
+        console.print(f"  [cyan]opus init[/cyan]")
+        console.print(f"\n[dim]Or manually create a config file at: {opus_dir}/config.yaml[/dim]")
         sys.exit(1)
     except Exception as e:
         console.print(f"[red]Fatal error: {e}[/red]")
@@ -281,5 +273,128 @@ tools:
         sys.exit(1)
 
 
+@cli.command()
+def init():
+    """Initialize Opus configuration interactively"""
+    opus_dir = Path.home() / ".opus"
+    config_path = opus_dir / "config.yaml"
+
+    # Check if config already exists
+    if config_path.exists():
+        console.print(f"[yellow]Config file already exists at {config_path}[/yellow]")
+        overwrite = Prompt.ask(
+            "Do you want to overwrite it?",
+            choices=["y", "n"],
+            default="n"
+        )
+        if overwrite.lower() != "y":
+            console.print("[dim]Keeping existing configuration.[/dim]")
+            return
+
+    console.print("\n[bold cyan]Welcome to Opus![/bold cyan]")
+    console.print("[dim]Let's set up your configuration...[/dim]\n")
+
+    # Model selection with LiteLLM support
+    console.print("[bold]Select your LLM model:[/bold]")
+    console.print("[dim]Opus now uses LiteLLM, supporting 100+ providers including Oracle GenAI[/dim]\n")
+
+    console.print("  [cyan]1.[/cyan] anthropic/claude-sonnet-4-20250514 (recommended)")
+    console.print("  [cyan]2.[/cyan] anthropic/claude-opus-4-20250514")
+    console.print("  [cyan]3.[/cyan] anthropic/claude-3-5-sonnet-20241022")
+    console.print("  [cyan]4.[/cyan] gpt-4.1-mini (OpenAI)")
+    console.print("  [cyan]5.[/cyan] gemini/gemini-2.5-flash (Google)")
+    console.print("  [cyan]6.[/cyan] bedrock/anthropic.claude-v2 (AWS)")
+    console.print("  [cyan]7.[/cyan] oci/cohere.command-r-plus (Oracle GenAI)")
+    console.print("  [cyan]8.[/cyan] Custom model (enter manually)")
+    console.print()
+
+    model_choice = Prompt.ask(
+        "Model",
+        choices=["1", "2", "3", "4", "5", "6", "7", "8"],
+        default="1"
+    )
+
+    model_map = {
+        "1": "anthropic/claude-sonnet-4-20250514",
+        "2": "anthropic/claude-opus-4-20250514",
+        "3": "anthropic/claude-3-5-sonnet-20241022",
+        "4": "gpt-4.1-mini",
+        "5": "gemini/gemini-2.5-flash",
+        "6": "bedrock/anthropic.claude-v2",
+        "7": "oci/cohere.command-r-plus",
+    }
+
+    if model_choice == "8":
+        console.print("\n[dim]Examples:[/dim]")
+        console.print("[dim]  - anthropic/claude-3-5-sonnet-20241022[/dim]")
+        console.print("[dim]  - gpt-4.1-mini[/dim]")
+        console.print("[dim]  - azure/gpt-4-deployment-name[/dim]")
+        console.print("[dim]  - oci/cohere.command-r-plus[/dim]")
+        console.print()
+        model = Prompt.ask("Enter model name")
+    else:
+        model = model_map[model_choice]
+
+    # Extract provider from model string for config comments
+    if "/" in model:
+        provider = model.split("/")[0]
+    else:
+        provider = "openai"  # Default for models without prefix
+
+    # Create config directory
+    opus_dir.mkdir(exist_ok=True)
+
+    # Generate config content
+    config_content = f"""# Opus Configuration
+# Generated by: opus init
+
+# LLM Provider Configuration (via LiteLLM)
+# LiteLLM supports 100+ providers - see https://docs.litellm.ai/docs/providers
+provider: {provider}
+model: {model}
+
+# For other providers, use these model formats:
+# - Anthropic: anthropic/claude-3-5-sonnet-20241022
+# - OpenAI: gpt-4.1-mini, gpt-4o
+# - Google Gemini: gemini/gemini-2.5-flash, gemini/gemini-1.5-pro
+# - AWS Bedrock: bedrock/anthropic.claude-v2
+# - Azure OpenAI: azure/your-deployment-name
+# - Oracle GenAI: oci/cohere.command-r-plus
+# - Cohere: command-r-plus
+
+# Agent Behavior
+max_iterations: 25  # Maximum conversation turns per request
+default_timeout: 30  # Default timeout for tool execution (seconds)
+
+# Tools Configuration
+tools:
+  # Built-in tools
+  bash:
+    enabled: true
+    approval: true  # Require user approval before running bash commands
+
+  read:
+    enabled: true
+    approval: false  # Read operations don't need approval
+
+  fetch:
+    enabled: true
+    approval: false  # Web fetch doesn't need approval
+"""
+
+    # Write config file
+    with open(config_path, "w") as f:
+        f.write(config_content)
+
+    console.print(f"\n[green]✓[/green] Configuration created at [cyan]{config_path}[/cyan]")
+    console.print(f"\n[dim]Provider:[/dim] {provider}")
+    console.print(f"[dim]Model:[/dim] {model}")
+    console.print(f"\n[bold green]Ready to go![/bold green] Run [cyan]opus[/cyan] to start.\n")
+
+
+# Alias for backwards compatibility
+main = cli
+
+
 if __name__ == "__main__":
-    main()
+    cli()

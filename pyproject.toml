@@ -5,14 +5,13 @@ description = "Terminal-based AI agent for software engineering automation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "anthropic>=0.40.0",
-    "openai>=1.0.0",
-    "google-genai>=0.3.0",
+    "litellm>=1.0.0",
     "pyyaml>=6.0",
     "rich>=13.0.0",
     "click>=8.1.0",
     "httpx>=0.27.0",
     "html2text>=2020.1.16",
+    "oci>=2.119.0",
 ]
 
 [project.scripts]

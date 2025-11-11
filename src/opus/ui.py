@@ -6,7 +6,7 @@ from rich.text import Text
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from opus.console_helper import console
+from opus.console_helper import console, get_current_theme
 
 # Version from pyproject.toml
 __version__ = "0.1.0"
@@ -27,30 +27,31 @@ class OpusUI:
 
     def show_startup_screen(self):
         """Display the minimal startup screen"""
+        theme = get_current_theme()
         console.clear()
 
         # Create welcome content with banner
         welcome_text = Text()
 
         # Banner - plain text
-        welcome_text.append("OPUS\n", style="bold magenta")
-        welcome_text.append(f"Version: {__version__}\n\n", style="dim")
+        welcome_text.append("OPUS\n", style=f"bold {theme.primary}")
+        welcome_text.append(f"Version: {__version__}\n\n", style=theme.dim)
 
         # Info
-        welcome_text.append("Model: ", style="dim")
-        welcome_text.append(f"{self.provider} · {self.model}\n", style="white")
-        welcome_text.append("Directory: ", style="dim")
-        welcome_text.append(f"{os.getcwd()}\n\n", style="white")
-        welcome_text.append("Type your message or ", style="dim")
-        welcome_text.append("/help", style="cyan")
-        welcome_text.append(" for commands · ", style="dim")
-        welcome_text.append("/exit", style="cyan")
-        welcome_text.append(" to quit", style="dim")
+        welcome_text.append("Model: ", style=theme.dim)
+        welcome_text.append(f"{self.provider} · {self.model}\n", style=theme.text)
+        welcome_text.append("Directory: ", style=theme.dim)
+        welcome_text.append(f"{os.getcwd()}\n\n", style=theme.text)
+        welcome_text.append("Type your message or ", style=theme.dim)
+        welcome_text.append("/help", style=theme.info)
+        welcome_text.append(" for commands · ", style=theme.dim)
+        welcome_text.append("/exit", style=theme.info)
+        welcome_text.append(" to quit", style=theme.dim)
 
         # Create panel with border that spans terminal width
         panel = Panel(
             welcome_text,
-            border_style="magenta",
+            border_style=theme.primary,
             padding=(1, 2),
             expand=True
         )
@@ -60,9 +61,9 @@ class OpusUI:
 
         # Show warnings for failed tools
         if self.failed_tools:
-            console.print(f"[yellow]⚠ Warning: {len(self.failed_tools)} tool(s) failed to load:[/yellow]")
+            console.print(f"[{theme.warning}]⚠ Warning: {len(self.failed_tools)} tool(s) failed to load:[/{theme.warning}]")
             for tool_name, error_msg in self.failed_tools.items():
-                console.print(f"  [yellow]•[/yellow] [bold]{tool_name}[/bold]: [dim]{error_msg}[/dim]")
+                console.print(f"  [{theme.warning}]•[/{theme.warning}] [bold]{tool_name}[/bold]: [{theme.dim}]{error_msg}[/{theme.dim}]")
             console.print()
 
     def show_assistant_message(self, message: str):
