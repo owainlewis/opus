@@ -164,7 +164,8 @@ class OpusAgent:
             self.execution_tracker.record_success(tool_name)
 
             # Show completion
-            print_tool_result(result)
+            if self.config.show_tool_output:
+                print_tool_result(result)
 
             # Format result for LLM
             result_message = self.llm.format_tool_result(

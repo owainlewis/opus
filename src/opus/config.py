@@ -42,6 +42,7 @@ class OpusConfig:
 
         # UI settings
         self.theme = config_data.get("theme", "default")
+        self.show_tool_output = config_data.get("show_tool_output", True)
 
         # Parse tools configuration
         self.tools_config = config_data.get("tools", {})

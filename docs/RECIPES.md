@@ -1,663 +1,695 @@
 # Recipes
 
-Recipes are **step-by-step guides** that combine knowledge, context, and executable steps. They can be operational runbooks (incident response, debugging) or knowledge guides (how to perform code reviews, onboarding procedures).
+Recipes are **reusable prompt packages** that provide specialized expertise and context for specific tasks. Think of them as expert guides that help the AI agent excel at complex tasks.
 
 ## What are Recipes?
 
-Think of recipes as **intelligent guides** that:
-- Combine context and knowledge with actionable steps
-- Can be executed automatically by the AI agent with your approval
-- Work for both technical operations and non-technical procedures
-- Are written in familiar Markdown format
-- Include both automated commands and manual instructions
+Recipes are **specialized skills** that:
+- Package domain expertise into reusable prompts
+- Provide comprehensive context and instructions
+- Guide the agent through complex tasks effectively
+- Work like expert advisors for specific scenarios
+- Can be shared across teams and projects
 
-**Key Insight:** Recipes leverage the AI agent's capabilities. You ask the agent to run a recipe, approve it once, and the agent executes all steps automatically while assisting you throughout the process.
+**Key Philosophy:** Recipes leverage the AI agent's reasoning abilities by providing rich context and expert guidance, rather than constraining it with rigid step-by-step procedures.
 
 ## Quick Start
 
-### Ask the agent to run a recipe
+### Using a recipe
+
+Ask the agent to use a recipe:
 
 ```bash
-opus -m "Run the health-check recipe"
+opus -m "Review src/app.py using the python-code-review recipe"
+```
+
+Or more naturally:
+
+```
+You: Can you review src/api.py for security issues?
+Agent: I'll use the python-code-review recipe to conduct a thorough review...
 ```
 
 The agent will:
-1. Find the recipe
-2. Ask for your approval to execute it
-3. Run each step automatically
-4. Report results back to you
-
-### In a conversation
-
-```
-You: We're having issues with the API service in production
-Agent: Let me help. I'll run the incident-triage recipe...
-```
+1. Load the recipe (getting expert context and instructions)
+2. Use its normal tools to complete the task
+3. Follow the guidance from the recipe
+4. Provide comprehensive results
 
 ## Recipe Format
 
-Recipes are Markdown files stored in `~/.opus/recipes/`.
+Recipes use **YAML format** for simplicity and clarity.
 
 ### Basic Structure
 
-```markdown
-# Recipe Name
+```yaml
+title: Recipe Name
+description: What this recipe does and when to use it
 
-Description of what this recipe does. Include context, background information,
-and knowledge that helps understand the purpose and approach.
+instructions: You are an expert at [domain] with deep knowledge of [specific area].
 
-**Parameters:**
-- param_name (required): Description of parameter
-- another_param (default: value): Optional parameter with default
+parameters:
+  param_name:
+    type: string
+    required: true
+    description: What this parameter is for
 
-## Step 1: Step Name
+  optional_param:
+    type: string
+    required: false
+    default: default_value
+    description: Optional parameter with default
 
-Description of what this step does and why it's important.
+prompt: |
+  This is the actual task guidance that the agent receives.
 
-```bash
-command $param_name
-\```
+  It can include:
+  - Context and background knowledge
+  - Step-by-step process to follow
+  - Best practices and reminders
+  - Output format specifications
+  - Common pitfalls to avoid
 
-## Step 2: Manual Step
-
-This is a manual step with instructions for you to follow:
-
-1. Do this action
-2. Check that result
-3. Verify the outcome
-
-## Step 3: Another Command
-
-More context about this step.
-
-```bash
-another-command --option $another_param
-\```
+  Use {{ param_name }} to reference parameters.
+  The agent will use this guidance to complete the task effectively.
 ```
 
-### Convention-Based Parsing
-
-The agent parses recipes using these conventions:
-
-- `# Title` → Recipe name
-- `**Parameters:**` section → Input parameters
-- `## Step N: Name` → Step headers
-- ` ```bash code blocks` → Executable commands
-- Other text → Manual instructions and context
-
-### Parameters
-
-Define inputs that can be provided when running the recipe:
-
-```markdown
-**Parameters:**
-- service (required): Service name to investigate
-- namespace (default: production): Kubernetes namespace
-- severity (default: P2): Incident severity (P1, P2, P3)
-```
-
-**In commands**, reference parameters with `$param`:
-
-```bash
-kubectl get pods -n $namespace -l app=$service
-```
-
-Both `$var` and `${var}` syntax work.
-
-## Step Types
-
-### Executable Steps
-
-Steps with code blocks are executed automatically:
-
-```markdown
-## Step 1: Check pod status
-
-```bash
-kubectl get pod $pod -n $namespace
-\```
-```
-
-The agent executes the bash command and shows you the output.
-
-### Manual Steps
-
-Steps without code blocks are manual instructions:
-
-```markdown
-## Step 2: Review dashboard
-
-Open Grafana and check:
-1. Error rate panel
-2. Latency graphs
-3. Resource usage
-
-Note any anomalies or spikes.
-```
-
-The agent shows you these instructions and waits for your confirmation.
-
-### Mixed Knowledge and Execution
-
-Recipes can combine context, knowledge, and commands:
-
-```markdown
-## Step 3: Check database connection pool
-
-Database connection issues often manifest as increased latency.
-Common causes include:
-- Pool exhaustion (all connections in use)
-- Connection leaks (not being returned)
-- Network issues between app and database
-
-```bash
-psql -c "SELECT count(*) FROM pg_stat_activity WHERE application_name='$service'"
-\```
-
-If count exceeds pool size (default: 20), you have a connection leak.
-```
-
-## Example Recipes
-
-### Operational Runbook: Kubernetes Debug
-
-```markdown
-# Kubernetes Pod Debug
-
-Debug a failing Kubernetes pod through systematic investigation.
-
-**Parameters:**
-- namespace (required): Kubernetes namespace
-- pod (required): Pod name to debug
-
-## Step 1: Get pod status
-
-Check current state, restarts, and node placement.
-
-```bash
-kubectl get pod $pod -n $namespace -o wide
-\```
-
-## Step 2: Get recent logs
-
-Look for error patterns and exceptions.
-
-```bash
-kubectl logs $pod -n $namespace --tail=100
-\```
-
-## Step 3: Check events
-
-View Kubernetes events for scheduling issues or errors.
-
-```bash
-kubectl get events -n $namespace --field-selector involvedObject.name=$pod
-\```
-
-## Step 4: Analyze findings
-
-Review the output above:
-1. What is the pod's status?
-2. Any error messages in logs?
-3. What do events indicate?
-4. Resource limits exceeded?
-
-Determine next troubleshooting steps based on findings.
-```
-
-### Knowledge Guide: Code Review
-
-```markdown
-# Code Review Best Practices
-
-Guidelines for conducting thorough and constructive code reviews.
-
-## Step 1: Understand context
-
-Before reviewing code:
-- Read the PR description thoroughly
-- Understand the problem being solved
-- Check linked tickets or issues
-- Review the acceptance criteria
-
-## Step 2: Architecture review
-
-Consider these questions:
-- Does this change follow existing patterns?
-- Are new dependencies introduced appropriately?
-- Will this scale with increased load?
-- Are there simpler alternatives?
-
-## Step 3: Code quality check
-
-Run automated checks:
-
-```bash
-npm run lint
-npm run test
-npm run test:coverage
-\```
-
-Look for:
-- Clear, descriptive variable names
-- Appropriate comments for complex logic
-- Consistent code style
-- Adequate test coverage (>80%)
-
-## Step 4: Security review
-
-Check for common vulnerabilities:
-- Input validation and sanitization
-- SQL injection risks
-- XSS (cross-site scripting) vulnerabilities
-- Secrets or credentials in code
-- Proper authentication/authorization
-
-## Step 5: Leave constructive feedback
-
-When commenting:
-- Be specific about what needs changing
-- Explain the reasoning behind suggestions
-- Acknowledge good patterns you see
-- Ask questions rather than making demands
-- Separate "must fix" from "nice to have"
-
-Remember: Code review is about maintaining quality AND helping teammates grow.
-```
-
-### Non-Technical: Manager Onboarding
-
-```markdown
-# Engineering Manager Onboarding
-
-Guide for onboarding a new engineering manager to the team.
-
-**Parameters:**
-- manager_name (required): New manager's name
-- team_name (required): Team they'll be managing
-
-## Step 1: Send welcome email
-
-Email $manager_name with:
-- Team roster and org chart
-- Meeting schedule template
-- Access request forms
-- First week agenda
-
-Use the "New Manager Welcome" email template in Gmail.
-
-## Step 2: Schedule 1-on-1s
-
-Set up 30-minute intro meetings with each $team_name member:
-
-1. Check team calendar for availability
-2. Send calendar invites with agenda
-3. Space them out over first 2 weeks
-
-Meeting agenda:
-- Team member's background
-- Current projects
-- Communication preferences
-- What they need from their manager
-
-## Step 3: Grant access
-
-Submit access requests (2-3 days processing):
-- GitHub org admin access
-- JIRA project lead role
-- PagerDuty manager permissions
-- Slack admin role
-
-```bash
-# Submit IT ticket for access
-opus-tools submit-ticket --category access --user $manager_name
-\```
-
-## Step 4: Review team context
-
-With outgoing manager or tech lead, review:
-- Current sprint goals
-- Upcoming deadlines
-- Known issues or risks
-- Team dynamics and relationships
-- Individual performance contexts
-
-## Step 5: Week 1 check-in
-
-Schedule check-in with $manager_name's manager:
-- How are 1-on-1s going?
-- Any surprises or concerns?
-- Access issues resolved?
-- Questions about team or company?
-
-Be honest - it's okay to not have all the answers yet!
+**Key Fields:**
+- `title`: Recipe name
+- `description`: What the recipe does
+- `instructions`: (Optional) System-level role/persona - sets the context for who the agent is
+- `parameters`: Input parameters
+- `prompt`: Task-specific instructions and context
+
+### Example Recipe
+
+```yaml
+title: Python Code Review
+description: Comprehensive Python code review with security focus
+
+instructions: You are a senior Python developer conducting thorough code reviews with a focus on security, performance, and maintainability.
+
+parameters:
+  file_path:
+    type: string
+    required: true
+    description: Path to Python file to review
+
+  focus:
+    type: string
+    required: false
+    default: all
+    description: Focus area (security, performance, style, all)
+
+prompt: |
+  Review the Python code at {{ file_path }} with focus on {{ focus }}.
+
+  Check for:
+  - PEP 8 compliance
+  - Security vulnerabilities
+  - Performance issues
+  - Test coverage
+
+  Provide specific feedback with line numbers and code examples.
 ```
 
 ## How It Works
 
-### 1. Agent Discovers Recipe
+### 1. Agent Loads Recipe
 
-You ask the agent to run a recipe by name:
-
-```
-You: Run the incident-triage recipe for the api service
-```
-
-### 2. Agent Calls Recipe Tool
-
-The agent identifies this request and calls the `recipe` tool:
+When you ask the agent to use a recipe:
 
 ```
-recipe(
-  recipe_name="incident-triage",
-  params={"service": "api"}
-)
+You: "Review my API using the api-spec-review recipe"
 ```
 
-### 3. You Approve Once
+### 2. Recipe Provides Context
 
-Opus asks for your approval:
+The agent loads the recipe and receives:
+- Expert context about API design
+- Comprehensive review checklist
+- Best practices to apply
+- Output format to follow
 
+### 3. Agent Completes Task
+
+The agent then:
+- Reads the necessary files
+- Analyzes using the recipe's guidance
+- Uses all available tools (Read, Grep, Bash, etc.)
+- Provides thorough, expert-level results
+
+### 4. Results
+
+You get comprehensive output following the recipe's structure:
+- Systematic analysis
+- Specific findings with examples
+- Actionable recommendations
+- Consistent format
+
+## Recipe Parameters
+
+### Defining Parameters
+
+Parameters make recipes reusable:
+
+```yaml
+parameters:
+  file_path:
+    type: string           # string, number, or boolean
+    required: true         # Must be provided
+    description: Path to file to review
+
+  severity:
+    type: string
+    required: false        # Optional
+    default: medium        # Used if not provided
+    description: Minimum severity level
 ```
-● Recipe(recipe_name='incident-triage', params={'service': 'api'})
-  Approve? (y/n):
+
+### Using Parameters in Prompts
+
+Reference parameters with `{{ parameter_name }}`:
+
+```yaml
+prompt: |
+  Review the file at {{ file_path }}.
+  Focus on issues with {{ severity }} severity or higher.
+
+  If {{ severity }} is "high", only report critical issues.
 ```
 
-Type `y` to approve.
+### Providing Parameters
 
-### 4. Agent Executes Steps
+When using a recipe:
 
-The agent:
-- Reads the recipe
-- Interpolates parameters (`$service` → `api`)
-- Executes each step automatically
-- Shows you output and asks for input on manual steps
-- Reports final results
+```bash
+# Explicit parameters
+opus -m "Run python-code-review recipe with file_path=src/app.py and focus=security"
 
-### 5. Results Returned
-
-You see a summary:
-
+# Natural language (agent extracts params)
+opus -m "Review src/app.py using the code review recipe, focus on security"
 ```
-Recipe 'incident-triage' execution complete:
-- Completed: 5/7
-- Failed: 1
-- Skipped: 1
 
-✓ Check service health - completed
-✓ Gather logs - completed
-✗ Check metrics - failed (connection timeout)
-...
+## Built-in Example Recipes
+
+### Python Code Review
+
+Expert Python code review with focus on:
+- PEP 8 style compliance
+- Security vulnerabilities
+- Performance optimization
+- Test coverage
+- Best practices
+
+**Usage:**
+```bash
+opus -m "Review src/app.py using python-code-review recipe"
+opus -m "Security review of src/api.py using python-code-review recipe with focus=security"
+```
+
+### API Specification Review
+
+Comprehensive API design review covering:
+- REST principles and resource design
+- Security and authentication
+- Documentation quality
+- Consistency and standards
+- Performance considerations
+
+**Usage:**
+```bash
+opus -m "Review api/openapi.yaml using api-spec-review recipe"
+```
+
+### Weekly Engineering Report
+
+Generate thorough weekly engineering reports including:
+- Key achievements and metrics
+- Work in progress
+- Blockers and risks
+- Team highlights
+- Next week's priorities
+
+**Usage:**
+```bash
+opus -m "Generate weekly report using weekly-report recipe for backend team"
+opus -m "Create a weekly report for last week using the weekly-report recipe"
 ```
 
 ## Creating Your Own Recipes
 
-### 1. Create a new Markdown file
+### 1. Create a YAML file
 
 ```bash
-touch ~/.opus/recipes/my-recipe.md
+touch ~/.opus/recipes/my-recipe.yaml
 ```
 
-### 2. Write your recipe
+### 2. Define the recipe
 
-Follow the conventions:
+```yaml
+title: My Custom Recipe
+description: What this recipe does
 
-```markdown
-# My Recipe
+parameters:
+  target:
+    type: string
+    required: true
+    description: What to target
 
-What this recipe does and when to use it.
+prompt: |
+  You are an expert at [domain].
 
-**Parameters:**
-- param1 (required): Description
+  Your task: [describe the task]
+  Target: {{ target }}
 
-## Step 1: First Action
+  Process:
+  1. [Step or consideration]
+  2. [Step or consideration]
+  3. [Step or consideration]
 
-```bash
-command $param1
-\```
+  Provide:
+  - [Expected output 1]
+  - [Expected output 2]
+
+  Best practices:
+  - [Important reminder]
+  - [Common pitfall to avoid]
 ```
 
 ### 3. Use it
 
-Ask the agent:
-
 ```bash
-opus -m "Run my-recipe with param1 set to foo"
+opus -m "Use my-recipe with target=foo"
 ```
 
-## Best Practices
+## Recipe Design Best Practices
 
-### 1. Descriptive Names
+### 1. Separate Role from Task
 
-✅ Good:
-```markdown
-## Step 1: Check error rate in last hour
-## Step 2: Restart failed pods
-## Step 3: Verify service is responding
+Use `instructions` for the role/persona and `prompt` for the task:
+
+❌ **Don't** mix role and task:
+```yaml
+prompt: |
+  You are a senior security engineer reviewing API security.
+
+  Review the API at {{ api_path }} and check for...
 ```
 
-❌ Bad:
-```markdown
-## Step 1: Check stuff
-## Step 2: Do things
+✅ **Do** separate them:
+```yaml
+instructions: You are a senior security engineer with expertise in API security and OWASP Top 10 vulnerabilities.
+
+prompt: |
+  Review the API at {{ api_path }}.
+
+  Check for:
+  - Authentication mechanisms
+  - Input validation
+  - Rate limiting
 ```
 
-### 2. Add Context
+**Why?** This gives the LLM clearer context about its role while keeping task instructions focused.
 
-Help the agent (and humans) understand:
+### 2. Rich Context Over Rigid Steps
 
-```markdown
-## Step 3: Check database connections
-
-Connection pool exhaustion is a common cause of API timeouts.
-The default pool size is 20. If active connections exceed this,
-new requests will queue and eventually timeout.
-
-```bash
-psql -c "SELECT count(*) FROM pg_stat_activity"
-\```
-
-If count > 20, investigate connection leaks in application code.
+❌ **Don't** create rigid procedures:
+```yaml
+prompt: |
+  Step 1: Run this command
+  Step 2: Check this file
+  Step 3: Run that command
 ```
 
-### 3. Parameterize Everything
+✅ **Do** provide rich context:
+```yaml
+instructions: You are an expert at reviewing API security.
 
-Make recipes reusable:
+prompt: |
+  Key areas to examine:
+  - Authentication mechanisms
+  - Input validation
+  - Rate limiting
 
-❌ Hardcoded:
-```bash
-kubectl logs api-gateway -n production
+  Look for common vulnerabilities like...
+  Provide specific recommendations with examples...
 ```
 
-✅ Parameterized:
-```bash
-kubectl logs $service -n $namespace
+### 3. Provide Expert Knowledge
+
+Include domain expertise the agent should know:
+
+```yaml
+prompt: |
+  Python security best practices:
+  - Never use pickle.loads() on untrusted data
+  - Always use parameterized queries for SQL
+  - Validate and sanitize all user input
+
+  When reviewing code at {{ file_path }}, check for...
 ```
 
-### 4. Mix Automation and Guidance
+### 4. Specify Output Format
 
-Not everything should be automated:
+Help the agent structure its response:
 
-```markdown
-## Step 4: Review monitoring
+```yaml
+prompt: |
+  Provide your review in this format:
 
-```bash
-curl $service/metrics | jq '.error_rate'
-\```
+  ## Summary
+  [Overall assessment]
 
-Expected value: < 0.01 (1%)
+  ## Critical Issues
+  [Must-fix items with line numbers]
 
-If elevated:
-1. Check recent deployments
-2. Review error logs
-3. Compare to baseline
-4. Escalate if sustained
+  ## Recommendations
+  [Suggestions with examples]
 ```
 
-### 5. Document Expected Outcomes
+### 5. Include Examples
 
-Help users interpret results:
+Show what good looks like:
 
-```markdown
-## Step 2: Check disk space
+```yaml
+prompt: |
+  When providing feedback, use this format:
 
-```bash
-df -h
-\```
+  - `src/app.py:42` - Issue description
+    ```python
+    # Current (problematic)
+    password = request.args.get('password')
 
-**Healthy:** < 80% used
-**Warning:** 80-90% used
-**Critical:** > 90% used
+    # Suggested
+    password = request.form.get('password')
+    ```
+```
 
-If critical, clear logs or expand volume.
+### 6. Make it Parameterized
+
+Enable reuse with parameters:
+
+```yaml
+parameters:
+  language:
+    type: string
+    default: python
+    description: Programming language
+
+prompt: |
+  Review {{ language }} code focusing on {{ language }}-specific best practices...
+```
+
+### 7. Add Context About Tools
+
+Guide the agent on what tools to use:
+
+```yaml
+prompt: |
+  Process:
+  1. Use Read to examine {{ file_path }}
+  2. Use Grep to search for security patterns
+  3. Use Bash to run linters if needed
+
+  Analyze the results and provide recommendations...
 ```
 
 ## Use Cases
 
-### Operations & SRE
-
-- **Incident Response:** `incident-triage.md`, `service-degradation.md`
-- **Debugging:** `k8s-pod-debug.md`, `high-latency-debug.md`
-- **Health Checks:** `health-check.md`, `pre-deploy-checklist.md`
-- **Maintenance:** `certificate-renewal.md`, `database-migration.md`
-
 ### Development
 
-- **Code Quality:** `code-review.md`, `refactoring-checklist.md`
-- **Debugging:** `production-bug-debug.md`, `memory-leak-investigation.md`
-- **Deployment:** `deploy-to-staging.md`, `rollback-deployment.md`
+- **Code Review:** `python-code-review`, `javascript-code-review`, `go-code-review`
+- **Architecture Review:** `architecture-review`, `design-doc-review`
+- **API Design:** `api-spec-review`, `graphql-schema-review`
+- **Security Audit:** `security-audit`, `dependency-review`
+- **Performance Analysis:** `performance-review`, `database-optimization`
 
-### Management
+### Operations & SRE
 
-- **Onboarding:** `manager-onboarding.md`, `engineer-onboarding.md`
-- **Process:** `sprint-planning.md`, `incident-postmortem.md`
-- **Reviews:** `performance-review-guide.md`, `promotion-packet.md`
+- **Incident Response:** `incident-triage`, `postmortem-analysis`
+- **Infrastructure Review:** `terraform-review`, `kubernetes-config-review`
+- **Monitoring Setup:** `metrics-review`, `alert-configuration`
 
-## Storage and Sharing
+### Documentation & Process
 
-### Local Recipes
+- **Documentation Review:** `readme-review`, `api-docs-review`
+- **Process Documentation:** `runbook-creation`, `onboarding-guide`
+
+### Reporting & Analysis
+
+- **Status Reports:** `weekly-report`, `sprint-summary`, `quarterly-review`
+- **Metrics Analysis:** `metrics-dashboard`, `trend-analysis`
+- **Technical Debt:** `tech-debt-audit`, `refactoring-plan`
+
+## Sharing Recipes
+
+### Personal Recipes
 
 Store in `~/.opus/recipes/`:
 
 ```bash
-ls ~/.opus/recipes/
-health-check.md
-incident-triage.md
-k8s-pod-debug.md
+~/.opus/recipes/
+├── python-code-review.yaml
+├── api-spec-review.yaml
+└── my-custom-recipe.yaml
 ```
 
 ### Team Recipes
 
-Share via Git:
+Share via Git repository:
 
 ```bash
 # Team repository
-team-recipes/
-├── incident-response/
-│   ├── api-down.md
-│   ├── database-recovery.md
-│   └── network-issues.md
-├── debugging/
-│   ├── k8s-pod-debug.md
-│   └── high-cpu-debug.md
-└── onboarding/
-    ├── engineer-onboarding.md
-    └── manager-onboarding.md
+company-recipes/
+├── code-review/
+│   ├── python-code-review.yaml
+│   ├── javascript-code-review.yaml
+│   └── go-code-review.yaml
+├── api-design/
+│   ├── api-spec-review.yaml
+│   └── graphql-review.yaml
+└── reports/
+    └── weekly-report.yaml
 
-# Clone to local recipes dir
-git clone git@github.com:company/recipes.git ~/.opus/recipes/team
+# Clone to your recipes directory
+git clone git@github.com:company/recipes.git ~/.opus/recipes/company
+
+# Use team recipes
+opus -m "Use company/code-review/python-code-review recipe"
+```
+
+### Recipe Collections
+
+Create themed collections:
+
+```bash
+~/.opus/recipes/
+├── security/          # Security-focused recipes
+├── performance/       # Performance optimization
+├── best-practices/    # Code quality and standards
+└── reporting/         # Status and metrics reports
+```
+
+## Advanced Features
+
+### Conditional Logic in Prompts
+
+Use parameters to change behavior:
+
+```yaml
+parameters:
+  mode:
+    type: string
+    default: standard
+    description: Review mode (quick, standard, thorough)
+
+prompt: |
+  Review mode: {{ mode }}
+
+  {% if mode == "quick" %}
+  Focus only on critical issues.
+  {% elif mode == "thorough" %}
+  Conduct comprehensive analysis of all aspects.
+  {% else %}
+  Balance thoroughness with efficiency.
+  {% endif %}
+```
+
+### Multi-Language Recipes
+
+Support multiple languages:
+
+```yaml
+parameters:
+  language:
+    type: string
+    required: true
+    description: Programming language (python, javascript, go, rust)
+
+prompt: |
+  Review {{ language }} code at {{ file_path }}.
+
+  Apply {{ language }}-specific best practices:
+  {% if language == "python" %}
+  - PEP 8 style guide
+  - Type hints
+  {% elif language == "javascript" %}
+  - ESLint rules
+  - Async/await patterns
+  {% elif language == "go" %}
+  - gofmt formatting
+  - Error handling patterns
+  {% endif %}
 ```
 
 ## Troubleshooting
 
-### Recipe not found
+### Recipe Not Found
 
 ```
 Error: Recipe not found: my-recipe
 ```
 
-**Solution:** Check file exists:
+**Solutions:**
+- Check file exists: `ls ~/.opus/recipes/my-recipe.yaml`
+- Check filename matches (case-sensitive)
+- Ensure file has `.yaml` or `.yml` extension
+
+### Missing Required Parameter
+
+```
+Error: Missing required parameter: file_path
+```
+
+**Solution:** Provide the parameter:
 ```bash
-ls ~/.opus/recipes/my-recipe.md
+opus -m "Use recipe with file_path=src/app.py"
 ```
 
-### Missing required parameter
+### Parameter Type Mismatch
 
 ```
-Error: Missing required parameter: namespace
+Error: Parameter 'count' must be a number
 ```
 
-**Solution:** Provide all required parameters:
-```
-opus -m "Run k8s-pod-debug with namespace=production and pod=api-123"
-```
-
-### Step execution failed
-
-```
-✗ Check service logs - failed (command not found: kubectl)
+**Solution:** Ensure parameter matches expected type:
+```yaml
+parameters:
+  count:
+    type: number    # Must provide numeric value
 ```
 
-**Solution:** Ensure required tools are installed:
+## Migration from Old Format
+
+If you have legacy Markdown recipes (step-by-step format), they still work but are deprecated.
+
+**Old format (Markdown, step-by-step):**
+```markdown
+# Recipe Name
+
+## Step 1: Do this
 ```bash
-which kubectl
+command
 ```
+
+## Step 2: Do that
+Instructions...
+```
+
+**New format (YAML, prompt-centric):**
+```yaml
+title: Recipe Name
+description: What it does
+
+prompt: |
+  Context and expert guidance...
+  Process to follow...
+  Use your tools to complete the task.
+```
+
+The new format is **simpler**, **more flexible**, and **better leverages AI reasoning**.
 
 ## Tips
 
 ### 1. Start Simple
 
-Create simple recipes with 3-5 steps. Add complexity as needed.
+Begin with basic recipes and add complexity as needed:
 
-### 2. Iterate Based on Use
+```yaml
+title: Simple Code Review
+description: Basic code review
 
-Update recipes after each use based on what worked and what didn't.
+parameters:
+  file_path:
+    type: string
+    required: true
+    description: File to review
 
-### 3. Document Tribal Knowledge
-
-Capture expert knowledge as recipes before it's lost:
-
-```markdown
-# Database Recovery
-
-Steps learned from the 2024-03-15 incident.
-Author: Jane Doe (based on incident #1234)
+prompt: |
+  Review {{ file_path }} for common issues.
+  Provide specific feedback with line numbers.
 ```
 
-### 4. Use for Onboarding
+### 2. Iterate Based on Results
 
-New team members can run recipes to learn procedures:
+Run the recipe, see what works, refine the prompt:
+- Add more context if agent misses things
+- Clarify output format if results are messy
+- Add examples if agent doesn't follow patterns
 
+### 3. Test with Different Inputs
+
+Try your recipe with various parameters:
 ```bash
-opus -m "Run the deploy-to-staging recipe"
+opus -m "Use recipe with file_path=small.py"
+opus -m "Use recipe with file_path=large.py"
+opus -m "Use recipe with file_path=complex.py"
 ```
 
-### 5. Version Control
+### 4. Document Your Recipes
 
-Keep recipes in Git to track changes and collaborate:
+Add helpful descriptions:
 
-```bash
-git commit -m "Update incident-triage recipe with new escalation paths"
+```yaml
+title: Python Security Audit
+description: |
+  Comprehensive security review of Python code.
+
+  Use this for:
+  - Security-sensitive code
+  - Production systems
+  - User-facing APIs
+
+  Focuses on OWASP Top 10 vulnerabilities.
 ```
+
+### 5. Build a Library
+
+Create recipes for recurring tasks:
+- Code reviews (per language)
+- Architecture reviews
+- Security audits
+- Documentation reviews
+- Weekly reports
+- Onboarding guides
 
 ## Related Documentation
 
 - [Configuration](./CONFIGURATION.md) - Configuring Opus
 - [Tools Guide](./TOOLS.md) - Creating custom tools
 
-## Examples
+## Community Recipes
 
-All example recipes are in `~/.opus/recipes/`:
+Share your recipes! Create a PR to add your recipe to the community collection:
 
-```bash
-ls ~/.opus/recipes/
-health-check.md
-incident-triage.md
-k8s-pod-debug.md
-```
+https://github.com/your-username/opus-recipes
 
-View any recipe to see the format:
-
-```bash
-cat ~/.opus/recipes/health-check.md
-```
+**Popular community recipes:**
+- Database migration review
+- Dockerfile optimization
+- Kubernetes manifest review
+- CI/CD pipeline audit
+- Dependency security scan
+- Technical design doc review
+- Architecture decision record (ADR) template

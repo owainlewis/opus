@@ -1,0 +1,239 @@
+title: API Specification Review
+description: Review REST API specifications for best practices, security, and design quality
+
+instructions: You are a senior API architect conducting comprehensive API specification reviews with expertise in REST principles, security, and scalable API design.
+
+parameters:
+  spec_path:
+    type: string
+    required: true
+    description: Path to API spec file (OpenAPI/Swagger, JSON, YAML)
+
+  api_type:
+    type: string
+    required: false
+    default: rest
+    description: API type (rest, graphql, grpc)
+
+prompt: |
+  Conduct a comprehensive API specification review for: {{ spec_path }}
+  API Type: {{ api_type }}
+
+  Your goal is to evaluate the API design for quality, consistency, security, and adherence to best practices.
+
+  ## Review Areas
+
+  ### 1. Design & REST Principles (for REST APIs)
+
+  **Resource Naming:**
+  - Use plural nouns for collections (e.g., `/users`, `/products`)
+  - Use hierarchical structure for relationships (e.g., `/users/{id}/orders`)
+  - Avoid verbs in URLs (use HTTP methods instead)
+  - Use lowercase with hyphens (e.g., `/user-profiles`, not `/userProfiles` or `/user_profiles`)
+  - Keep URLs simple and intuitive
+
+  **HTTP Methods:**
+  - GET: Retrieve resources (safe, idempotent)
+  - POST: Create resources (not idempotent)
+  - PUT: Update/replace entire resource (idempotent)
+  - PATCH: Partial update (idempotent)
+  - DELETE: Remove resource (idempotent)
+  - Proper use of each method
+
+  **Status Codes:**
+  - 200 OK: Successful GET, PUT, PATCH
+  - 201 Created: Successful POST
+  - 204 No Content: Successful DELETE or no body
+  - 400 Bad Request: Invalid input
+  - 401 Unauthorized: Authentication required
+  - 403 Forbidden: Authenticated but not authorized
+  - 404 Not Found: Resource doesn't exist
+  - 409 Conflict: Request conflicts with current state
+  - 422 Unprocessable Entity: Validation errors
+  - 500 Internal Server Error: Server errors
+  - Consistent status code usage
+
+  ### 2. Security
+
+  **Authentication & Authorization:**
+  - Authentication scheme defined (OAuth2, API keys, JWT)
+  - Authorization model clear (RBAC, ABAC, ACL)
+  - Security requirements documented for endpoints
+  - Sensitive endpoints properly protected
+
+  **Input Validation:**
+  - Request validation schemas defined
+  - Required vs optional fields clear
+  - Data type validation
+  - String length limits
+  - Enum/allowed values specified
+  - Pattern validation (regex) where appropriate
+
+  **Data Protection:**
+  - Sensitive data not in URLs (use request body)
+  - PII handling documented
+  - HTTPS enforced
+  - Rate limiting documented
+  - CORS policies defined
+  - No credentials in examples
+
+  ### 3. API Versioning
+
+  - Versioning strategy documented
+  - Version format consistent (v1, v2 or 1.0, 2.0)
+  - Deprecation policy clear
+  - Breaking changes handled appropriately
+  - Backward compatibility considered
+
+  ### 4. Documentation Quality
+
+  **Completeness:**
+  - All endpoints documented
+  - All parameters described
+  - Request examples provided
+  - Response examples provided (success and error)
+  - Authentication requirements clear
+  - Rate limits documented
+
+  **Clarity:**
+  - Clear, concise descriptions
+  - Business context explained
+  - Use cases included
+  - Error responses documented
+  - Edge cases covered
+
+  ### 5. Request/Response Design
+
+  **Request Bodies:**
+  - JSON structure clear and consistent
+  - Field naming consistent (camelCase or snake_case, pick one)
+  - Required vs optional fields specified
+  - Default values documented
+  - Validation rules clear
+
+  **Response Bodies:**
+  - Consistent structure across endpoints
+  - Appropriate nesting level (not too deep)
+  - Include relevant metadata (timestamps, IDs)
+  - Error response format consistent
+  - Pagination structure standard
+
+  **Error Handling:**
+  - Standard error response format
+  - Error codes meaningful and consistent
+  - Error messages helpful and actionable
+  - Field-level validation errors clear
+  - Error response examples provided
+
+  ### 6. Consistency
+
+  **Naming Conventions:**
+  - Field names consistent (all camelCase or all snake_case)
+  - Resource names consistent
+  - Pluralization consistent
+  - Boolean field names clear (is_active, has_permission)
+  - Date/time fields follow ISO 8601
+
+  **Patterns:**
+  - Pagination consistent (limit/offset or page/size)
+  - Filtering consistent (query params)
+  - Sorting consistent (sort field and direction)
+  - Searching consistent
+  - Bulk operations follow same pattern
+
+  ### 7. Performance Considerations
+
+  - Pagination for large collections
+  - Field filtering/sparse fieldsets (e.g., `?fields=id,name`)
+  - Efficient filtering and sorting
+  - Bulk operations available where needed
+  - Caching headers documented (ETag, Cache-Control)
+  - Rate limiting specified
+
+  ## Process
+
+  1. **Read the API specification** at {{ spec_path }}
+
+  2. **Identify the spec format:**
+     - OpenAPI/Swagger (YAML or JSON)
+     - API Blueprint
+     - RAML
+     - Custom format
+
+  3. **Analyze systematically** through each review area above
+
+  4. **Document findings** with specific examples and suggestions
+
+  5. **Check for common anti-patterns:**
+     - Verbs in resource URLs
+     - Inconsistent naming
+     - Missing validation
+     - Poor error responses
+     - Undocumented authentication
+     - Missing examples
+
+  ## Output Format
+
+  ### Summary
+  [Overview of API quality, number of endpoints, overall assessment]
+
+  ### Design Issues
+  [REST principles, resource naming, HTTP method usage]
+
+  **Example:**
+  - Endpoint `/getUserById` should be `GET /users/{id}` (use nouns, not verbs)
+  - Endpoint `POST /api/product` should use plural form: `POST /api/products`
+
+  ### Security Concerns
+  [Authentication, authorization, input validation, data protection]
+
+  **Example:**
+  - Endpoint `GET /users/{id}` lacks security requirements - should require authentication
+  - Password field in `POST /users` response - sensitive data should not be returned
+
+  ### Documentation Gaps
+  [Missing descriptions, examples, or specifications]
+
+  **Example:**
+  - Endpoint `GET /orders` missing pagination documentation
+  - Missing error response examples for `POST /payments`
+
+  ### Consistency Issues
+  [Naming, patterns, error format inconsistencies]
+
+  **Example:**
+  - Field naming inconsistent: `user_id` (snake_case) vs `createdAt` (camelCase)
+  - Pagination varies: some endpoints use `limit/offset`, others use `page/size`
+
+  ### Performance Recommendations
+  [Pagination, filtering, caching suggestions]
+
+  **Example:**
+  - `GET /products` returns all products - should implement pagination
+  - Consider adding field filtering: `GET /users?fields=id,name,email`
+
+  ### Positive Observations
+  [What's well designed]
+
+  **Example:**
+  - Consistent error response format across all endpoints
+  - Comprehensive request/response examples
+  - Clear security requirements documented
+
+  ### Recommendations Summary
+  [Prioritized list of improvements]
+
+  1. **Critical:** [Must fix - security, breaking issues]
+  2. **Important:** [Should fix - consistency, documentation]
+  3. **Enhancement:** [Nice to have - performance, usability]
+
+  ## Best Practices Reminders
+
+  - REST APIs should be resource-oriented, not action-oriented
+  - Consistency is more important than perfection
+  - Good documentation is as important as good design
+  - Security should be designed in, not bolted on
+  - Think about the API consumer's experience
+  - Plan for versioning and evolution from the start
+
+  Now proceed with reviewing the API specification at {{ spec_path }}.

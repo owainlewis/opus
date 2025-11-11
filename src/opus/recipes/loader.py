@@ -6,18 +6,23 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from opus.recipes.markdown_parser import MarkdownRecipeParser
+from opus.recipes.yaml_parser import YamlRecipeParser
 
 logger = logging.getLogger(__name__)
 
 
 class RecipeLoader:
     """
-    Loads and manages recipes from Markdown files.
+    Loads and manages recipes from Markdown and YAML files.
+
+    Supports two formats:
+    - YAML: Simple, prompt-centric recipes (recommended)
+    - Markdown: Legacy step-by-step recipes (deprecated)
 
     Handles:
     - Loading recipes from ~/.opus/recipes/
-    - Include resolution (merging included recipes)
-    - Parameter interpolation
+    - Parameter validation and interpolation
+    - Format detection based on file extension
     """
 
     DEFAULT_RECIPES_DIR = Path.home() / ".opus" / "recipes"
@@ -32,21 +37,25 @@ class RecipeLoader:
         self.recipes_dir = recipes_dir or self.DEFAULT_RECIPES_DIR
         self.recipes_dir.mkdir(parents=True, exist_ok=True)
         self.loaded_recipes = {}  # Cache loaded recipes
-        self.parser = MarkdownRecipeParser()
+        self.markdown_parser = MarkdownRecipeParser()
+        self.yaml_parser = YamlRecipeParser()
 
     def list_recipes(self) -> List[str]:
         """
         List available recipe names.
 
         Returns:
-            List of recipe names (without .md extension)
+            List of recipe names (without file extension)
         """
         if not self.recipes_dir.exists():
             return []
 
-        recipes = []
-        for file_path in self.recipes_dir.glob("*.md"):
-            recipes.append(file_path.stem)
+        recipes = set()
+
+        # Find all recipe files (.yaml, .yml, .md)
+        for pattern in ["*.yaml", "*.yml", "*.md"]:
+            for file_path in self.recipes_dir.glob(pattern):
+                recipes.add(file_path.stem)
 
         return sorted(recipes)
 
@@ -54,8 +63,10 @@ class RecipeLoader:
         """
         Load a recipe by name.
 
+        Tries to load in order: .yaml, .yml, .md
+
         Args:
-            recipe_name: Recipe name (without .md extension)
+            recipe_name: Recipe name (without file extension)
 
         Returns:
             Loaded recipe dict
@@ -67,12 +78,18 @@ class RecipeLoader:
         if recipe_name in self.loaded_recipes:
             return self.loaded_recipes[recipe_name]
 
-        # Find recipe file
-        recipe_path = self.recipes_dir / f"{recipe_name}.md"
-        if not recipe_path.exists():
+        # Try to find recipe file (prefer YAML over Markdown)
+        recipe_path = None
+        for ext in ['.yaml', '.yml', '.md']:
+            candidate = self.recipes_dir / f"{recipe_name}{ext}"
+            if candidate.exists():
+                recipe_path = candidate
+                break
+
+        if not recipe_path:
             raise FileNotFoundError(f"Recipe not found: {recipe_name}")
 
-        # Load
+        # Load based on format
         recipe = self._load_recipe_file(recipe_path)
 
         # Cache and return
@@ -81,24 +98,29 @@ class RecipeLoader:
 
     def _load_recipe_file(self, recipe_path: Path) -> Dict[str, Any]:
         """
-        Load a recipe file and handle includes.
+        Load a recipe file using appropriate parser.
 
         Args:
-            recipe_path: Path to recipe Markdown file
+            recipe_path: Path to recipe file (.yaml, .yml, or .md)
 
         Returns:
             Loaded recipe dict
         """
         logger.info(f"Loading recipe from {recipe_path}")
 
-        # Parse Markdown
-        recipe_data = self.parser.parse_file(recipe_path)
+        # Select parser based on file extension
+        if recipe_path.suffix in ['.yaml', '.yml']:
+            recipe_data = self.yaml_parser.parse_file(recipe_path)
+            logger.info(f"Successfully loaded YAML recipe '{recipe_data['title']}'")
+        else:
+            # Markdown (legacy format)
+            recipe_data = self.markdown_parser.parse_file(recipe_path)
 
-        # Handle includes
-        if recipe_data.get("includes"):
-            recipe_data = self._resolve_includes(recipe_data)
+            # Handle includes (only for markdown)
+            if recipe_data.get("includes"):
+                recipe_data = self._resolve_includes(recipe_data)
 
-        logger.info(f"Successfully loaded recipe '{recipe_data['name']}' with {len(recipe_data['steps'])} steps")
+            logger.info(f"Successfully loaded Markdown recipe '{recipe_data['name']}' with {len(recipe_data['steps'])} steps")
 
         return recipe_data
 
@@ -147,7 +169,8 @@ class RecipeLoader:
         """
         Interpolate parameter variables in recipe.
 
-        Replaces $param_name and ${param_name} with param values.
+        For YAML: Replaces {{ param_name }} with param values
+        For Markdown: Replaces $param_name and ${param_name} with param values
 
         Args:
             recipe: Recipe definition
@@ -156,7 +179,11 @@ class RecipeLoader:
         Returns:
             Recipe with variables interpolated
         """
-        return self.parser.interpolate_variables(recipe, params)
+        # Use appropriate parser based on format
+        if recipe.get('format') == 'yaml':
+            return self.yaml_parser.interpolate_variables(recipe, params)
+        else:
+            return self.markdown_parser.interpolate_variables(recipe, params)
 
     def validate_params(self, recipe: Dict[str, Any], params: Dict[str, Any]) -> List[str]:
         """
@@ -207,17 +234,35 @@ class RecipeLoader:
         Raises:
             FileNotFoundError: If recipe doesn't exist
         """
-        recipe_path = self.recipes_dir / f"{recipe_name}.md"
-        if not recipe_path.exists():
+        # Find recipe file
+        recipe_path = None
+        for ext in ['.yaml', '.yml', '.md']:
+            candidate = self.recipes_dir / f"{recipe_name}{ext}"
+            if candidate.exists():
+                recipe_path = candidate
+                break
+
+        if not recipe_path:
             raise FileNotFoundError(f"Recipe not found: {recipe_name}")
 
-        recipe_data = self.parser.parse_file(recipe_path)
-
-        return {
-            "name": recipe_data.get("name", recipe_name),
-            "description": recipe_data.get("description", ""),
-            "version": recipe_data.get("version", "1.0.0"),
-            "author": recipe_data.get("author", "Unknown"),
-            "parameters": recipe_data.get("parameters", {}),
-            "step_count": len(recipe_data.get("steps", [])),
-        }
+        # Parse based on format
+        if recipe_path.suffix in ['.yaml', '.yml']:
+            recipe_data = self.yaml_parser.parse_file(recipe_path)
+            return {
+                "name": recipe_data.get("title", recipe_name),
+                "description": recipe_data.get("description", ""),
+                "version": recipe_data.get("version", "2.0.0"),
+                "format": "yaml",
+                "parameters": recipe_data.get("parameters", {}),
+            }
+        else:
+            recipe_data = self.markdown_parser.parse_file(recipe_path)
+            return {
+                "name": recipe_data.get("name", recipe_name),
+                "description": recipe_data.get("description", ""),
+                "version": recipe_data.get("version", "1.0.0"),
+                "format": "markdown",
+                "author": recipe_data.get("author", "Unknown"),
+                "parameters": recipe_data.get("parameters", {}),
+                "step_count": len(recipe_data.get("steps", [])),
+            }

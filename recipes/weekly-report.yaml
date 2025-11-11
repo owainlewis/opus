@@ -1,0 +1,245 @@
+title: Weekly Engineering Report
+description: Generate a comprehensive weekly report of engineering activities and progress
+
+instructions: You are an engineering manager creating detailed weekly reports that provide clear visibility into team progress, achievements, and challenges.
+
+parameters:
+  team:
+    type: string
+    required: false
+    default: all
+    description: Team name to report on (e.g., backend, frontend, platform)
+
+  week_start:
+    type: string
+    required: false
+    default: last_monday
+    description: Start date of week (YYYY-MM-DD) or 'last_monday'
+
+  week_end:
+    type: string
+    required: false
+    default: last_friday
+    description: End date of week (YYYY-MM-DD) or 'last_friday'
+
+  format:
+    type: string
+    required: false
+    default: markdown
+    description: Output format (markdown, html, slack)
+
+prompt: |
+  Create a comprehensive weekly engineering report.
+
+  **Parameters:**
+  - Team: {{ team }}
+  - Week: {{ week_start }} to {{ week_end }}
+  - Format: {{ format }}
+
+  ## Report Structure
+
+  Generate a report with the following sections:
+
+  ### 1. Executive Summary
+  - High-level overview of the week
+  - Key accomplishments (2-3 top achievements)
+  - Major blockers or concerns
+  - Overall team health/velocity
+
+  ### 2. Key Achievements
+  List significant accomplishments with context:
+  - **Feature Launches:** New features shipped to production
+  - **Bug Fixes:** Critical or high-impact bugs resolved
+  - **Technical Improvements:** Refactoring, performance improvements, tech debt reduction
+  - **Milestones:** Project milestones reached
+
+  Format:
+  - Clear, concise descriptions
+  - Link to PRs, tickets, or documentation
+  - Impact/value explained
+
+  ### 3. Metrics & Statistics
+
+  **Code Activity:**
+  - Pull requests opened, reviewed, merged
+  - Lines of code changed (additions/deletions)
+  - Number of commits
+  - Average PR review time
+
+  **Quality Metrics:**
+  - Test coverage percentage (and change from last week)
+  - Number of tests added
+  - CI/CD success rate
+  - Build times
+
+  **Deployment Activity:**
+  - Number of deployments
+  - Deployment frequency
+  - Deployment success rate
+  - Rollback count (if any)
+
+  **Incident & Support:**
+  - Production incidents (count and severity)
+  - Mean time to resolution (MTTR)
+  - Support tickets resolved
+  - Bug reports received
+
+  ### 4. Work in Progress
+  List ongoing projects and their status:
+
+  For each active project:
+  - **Project name**
+  - **Status:** On track / At risk / Blocked
+  - **Progress:** Percentage complete or current phase
+  - **Next steps:** What's planned for next week
+  - **Blockers:** Any impediments (if applicable)
+  - **Owner/Team:** Who's responsible
+
+  ### 5. Blockers & Risks
+
+  **Current Blockers:**
+  - What's blocking progress right now
+  - Impact on timeline/deliverables
+  - Actions needed to unblock
+
+  **Risks & Concerns:**
+  - Potential issues on the horizon
+  - Technical debt concerns
+  - Resource constraints
+  - Dependencies on other teams
+
+  ### 6. Team Highlights
+
+  **People & Collaboration:**
+  - Team wins and celebrations
+  - New team members onboarded
+  - Notable collaborations
+  - Knowledge sharing (tech talks, documentation)
+
+  **Learning & Growth:**
+  - New technologies adopted
+  - Skills developed
+  - Process improvements implemented
+
+  ### 7. Next Week's Focus
+
+  **Priorities:**
+  - Top 3-5 priorities for next week
+  - Important deadlines approaching
+  - Planned releases or launches
+
+  **Meetings & Events:**
+  - Sprint planning, retrospectives
+  - Important stakeholder meetings
+  - On-call rotation schedule
+
+  ## Data Sources
+
+  Gather data from these sources:
+
+  ### Git & Version Control
+  ```bash
+  # Get commits for date range
+  git log --since="{{ week_start }}" --until="{{ week_end }}" --oneline
+
+  # Get contributor stats
+  git shortlog --since="{{ week_start }}" --until="{{ week_end }}" -sn
+
+  # Get file changes
+  git diff --stat --since="{{ week_start }}" --until="{{ week_end }}"
+  ```
+
+  ### GitHub/GitLab (if available)
+  - Pull request activity via API or CLI (`gh pr list`)
+  - Issue activity
+  - Code review statistics
+  - Deployment information
+
+  ### CI/CD Systems
+  - Build success/failure rates
+  - Test results and coverage
+  - Deployment frequency
+
+  ### Monitoring & Observability
+  - Incident logs
+  - Error rates
+  - Performance metrics
+  - Uptime statistics
+
+  ### Project Management Tools
+  - Jira, Linear, or Asana tickets
+  - Sprint progress
+  - Velocity trends
+
+  ## Output Format
+
+  ### For Markdown:
+  ```markdown
+  # Weekly Engineering Report
+  **Team:** {{ team }}
+  **Week:** {{ week_start }} to {{ week_end }}
+
+  ## Executive Summary
+  [Summary paragraph]
+
+  ## Key Achievements
+  - **Feature:** Description [PR #123]
+  - **Bug Fix:** Description [Issue #456]
+
+  ## Metrics
+  | Metric | This Week | Last Week | Change |
+  |--------|-----------|-----------|--------|
+  | PRs Merged | 15 | 12 | +25% |
+  | Test Coverage | 82% | 80% | +2% |
+
+  ## Work in Progress
+  ### Project: API Refactoring
+  - **Status:** On track
+  - **Progress:** 60% complete
+  - **Next:** Complete endpoint migration
+
+  [Continue with remaining sections...]
+  ```
+
+  ### For Slack:
+  Use Slack formatting (bold, bullets, emoji)
+  - Keep it concise
+  - Use emoji for visual appeal
+  - Include relevant links
+  - Highlight critical items
+
+  ### For HTML:
+  - Professional formatting
+  - Use headings, tables, lists
+  - Include charts if data available
+  - Styled for email distribution
+
+  ## Best Practices
+
+  1. **Be Concise:** Focus on high-impact information
+  2. **Be Specific:** Use numbers, links, concrete examples
+  3. **Be Honest:** Don't hide problems or risks
+  4. **Be Forward-Looking:** Include plans and next steps
+  5. **Celebrate Wins:** Acknowledge team achievements
+  6. **Highlight Blockers:** Make impediments visible
+  7. **Use Consistent Format:** Makes reports easy to scan
+  8. **Include Context:** Help readers understand the "why"
+
+  ## Tips for Data Gathering
+
+  - Start with git/GitHub CLI commands to get code activity
+  - Use project management tool APIs for ticket data
+  - Check monitoring dashboards for incident/uptime data
+  - Review CI/CD dashboards for build/deployment stats
+  - Ask team members for qualitative updates if needed
+  - Keep track of recurring data sources for next time
+
+  ## Notes
+
+  - If data is unavailable, note it in the report
+  - Focus on trends and changes, not just absolute numbers
+  - Tailor detail level to your audience (exec vs team)
+  - Include links so readers can drill down
+  - Be consistent week-over-week for easy comparison
+
+  Now proceed with gathering data and generating the weekly report for {{ team }} for the week of {{ week_start }} to {{ week_end }}.
