@@ -28,11 +28,15 @@ class LiteLLMProvider(LLMProvider):
     - And many more...
 
     Model naming follows litellm conventions:
+    - gpt-4.1-mini (OpenAI)
+    - gpt-4o (OpenAI)
+    - anthropic/claude-sonnet-4-20250514
     - anthropic/claude-3-5-sonnet-20241022
-    - gpt-4o (OpenAI models can omit provider prefix)
+    - gemini/gemini-2.5-flash
     - gemini/gemini-1.5-pro
-    - bedrock/anthropic.claude-v2
-    - oci/cohere.command-r-plus (Oracle GenAI)
+
+    Note: For Oracle GenAI models (xai.grok-4, cohere.command-r-plus, etc.),
+    use provider: oracle instead of litellm for better native support.
     """
 
     def _setup(self):

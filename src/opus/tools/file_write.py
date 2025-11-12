@@ -102,7 +102,7 @@ async def execute_write(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Tool definition for loader
-WRITE_TOOL_DEFINITION = {
+FILE_WRITE_TOOL_DEFINITION = {
     "name": "file_write",
     "description": "Write content to a file. Can create new files or overwrite/append to existing files. The parent directory must exist.",
     "parameters": {

@@ -4,7 +4,7 @@ Opus is an AI-powered automation agent for your terminal. It turns any script in
 
 **Key Features:**
 - 🔧 **Turn any script into a tool** - Bash scripts, Python, or any executable
-- 🤖 **100+ LLM providers** - Powered by LiteLLM supporting Anthropic, OpenAI, Gemini, AWS Bedrock, Azure, Oracle GenAI, and more
+- 🤖 **100+ LLM providers** - Native Oracle GenAI support + LiteLLM for Anthropic, OpenAI, Google Gemini, and more
 - 🔒 **Enterprise-ready** - Per-tool approval settings, no vendor lock-in
 - 📋 **Recipes (Runbooks)** - Interactive, reusable workflows
 - 🎯 **Simple configuration** - YAML-based tool definitions
@@ -31,35 +31,48 @@ Once installed, the `opus` command will be available in your terminal.
 Create `~/.opus/config.yaml`:
 
 ```yaml
-# Opus uses LiteLLM for universal LLM support
-provider: anthropic
-model: anthropic/claude-sonnet-4-20250514
+# LLM Provider Configuration
+# Use "oracle" for Oracle GenAI, "litellm" (default) for other providers
+provider: litellm
+model: gpt-4.1-mini
 
-# Other provider examples:
-# - OpenAI: gpt-4.1-mini
-# - Gemini: gemini/gemini-2.5-flash
-# - AWS Bedrock: bedrock/anthropic.claude-v2
-# - Azure: azure/your-deployment-name
-# - Oracle GenAI: oci/cohere.command-r-plus
+# Oracle GenAI examples (use provider: oracle):
+# provider: oracle
+# model: xai.grok-4
+# model: cohere.command-r-plus
+
+# LiteLLM examples (use provider: litellm):
+# model: gpt-4.1-mini                      # OpenAI
+# model: gemini/gemini-2.5-flash           # Google
+# model: anthropic/claude-sonnet-4-20250514  # Anthropic
 
 tools:
   bash:
     enabled: true
     approval: true  # Require approval for bash commands
 
-  read:
+  file_read:
     enabled: true
     approval: false
 
-  fetch:
+  fetch_url:
     enabled: true
     approval: false
 ```
 
 Set your API key (depends on provider):
 ```bash
+# For OpenAI
+export OPENAI_API_KEY=your-key-here
+
+# For Google Gemini
+export GOOGLE_API_KEY=your-key-here
+
+# For Anthropic
 export ANTHROPIC_API_KEY=your-key-here
-# or OPENAI_API_KEY, GOOGLE_API_KEY, AWS_ACCESS_KEY_ID, etc.
+
+# For Oracle GenAI (OCI CLI config required)
+# See: https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm
 ```
 
 ### Basic Usage
@@ -137,19 +150,28 @@ See [docs/RECIPES.md](docs/RECIPES.md) for full documentation.
 
 ## Supported LLM Providers
 
-Opus uses [LiteLLM](https://docs.litellm.ai/docs/providers) to support 100+ LLM providers. Here are some popular options:
+Opus supports two provider modes:
+
+### Oracle GenAI (Native Provider)
+For Oracle GenAI models, use `provider: oracle` for optimal performance:
+
+```yaml
+provider: oracle
+model: xai.grok-4                    # XAI Grok
+model: cohere.command-r-plus         # Cohere Command R+
+model: meta.llama-3-1-405b-instruct  # Meta Llama 3.1
+```
+
+### LiteLLM (Universal Provider)
+For all other providers, use `provider: litellm` (default):
 
 | Provider | Example Models | Model String Format |
 |----------|----------------|---------------------|
-| **Anthropic** | Claude 3.5 Sonnet, Opus 4 | `anthropic/claude-sonnet-4-20250514` |
-| **OpenAI** | GPT-4.1 Mini, GPT-4o | `gpt-4.1-mini` (prefix optional) |
+| **OpenAI** | GPT-4.1 Mini, GPT-4o | `gpt-4.1-mini`, `gpt-4o` |
 | **Google Gemini** | Gemini 2.5 Flash, 1.5 Pro | `gemini/gemini-2.5-flash` |
-| **AWS Bedrock** | Claude, Titan, Llama | `bedrock/anthropic.claude-v2` |
-| **Azure OpenAI** | GPT-4, GPT-3.5 | `azure/your-deployment-name` |
-| **Oracle GenAI** | Command R+, Llama | `oci/cohere.command-r-plus` |
-| **Cohere** | Command R+, Command | `command-r-plus` |
+| **Anthropic** | Claude Sonnet 4, Opus 4 | `anthropic/claude-sonnet-4-20250514` |
 
-See [LiteLLM docs](https://docs.litellm.ai/docs/providers) for the complete list of supported providers.
+LiteLLM supports 100+ providers. See [LiteLLM docs](https://docs.litellm.ai/docs/providers) for the complete list.
 
 ## Tool Approval Modes
 

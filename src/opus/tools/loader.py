@@ -127,8 +127,8 @@ class ToolLoader:
         """
         # Import fetch_url tool definition if needed
         if tool_name == "fetch_url":
-            from opus.tools.fetch import FETCH_TOOL_DEFINITION, execute_fetch
-            tool_def = FETCH_TOOL_DEFINITION.copy()
+            from opus.tools.fetch_url import FETCH_URL_TOOL_DEFINITION, execute_fetch
+            tool_def = FETCH_URL_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_fetch  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
@@ -136,8 +136,8 @@ class ToolLoader:
 
         # Import run_recipe tool definition if needed
         if tool_name == "run_recipe":
-            from opus.tools.recipe_tool import RECIPE_TOOL_DEFINITION, execute_recipe_tool
-            tool_def = RECIPE_TOOL_DEFINITION.copy()
+            from opus.tools.run_recipe import RUN_RECIPE_TOOL_DEFINITION, execute_recipe_tool
+            tool_def = RUN_RECIPE_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_recipe_tool  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
@@ -145,7 +145,7 @@ class ToolLoader:
 
         # Import get_current_time tool definition if needed
         if tool_name == "get_current_time":
-            from opus.tools.current_time import GET_CURRENT_TIME_TOOL_DEFINITION, execute_get_current_time
+            from opus.tools.get_current_time import GET_CURRENT_TIME_TOOL_DEFINITION, execute_get_current_time
             tool_def = GET_CURRENT_TIME_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_get_current_time  # Mark as Python callable
@@ -154,8 +154,8 @@ class ToolLoader:
 
         # Import file_read tool definition if needed
         if tool_name == "file_read":
-            from opus.tools.read import READ_TOOL_DEFINITION, execute_read
-            tool_def = READ_TOOL_DEFINITION.copy()
+            from opus.tools.file_read import FILE_READ_TOOL_DEFINITION, execute_read
+            tool_def = FILE_READ_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_read  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
@@ -163,8 +163,8 @@ class ToolLoader:
 
         # Import file_write tool definition if needed
         if tool_name == "file_write":
-            from opus.tools.write import WRITE_TOOL_DEFINITION, execute_write
-            tool_def = WRITE_TOOL_DEFINITION.copy()
+            from opus.tools.file_write import FILE_WRITE_TOOL_DEFINITION, execute_write
+            tool_def = FILE_WRITE_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_write  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")
@@ -172,8 +172,8 @@ class ToolLoader:
 
         # Import file_edit tool definition if needed
         if tool_name == "file_edit":
-            from opus.tools.edit import EDIT_TOOL_DEFINITION, execute_edit
-            tool_def = EDIT_TOOL_DEFINITION.copy()
+            from opus.tools.file_edit import FILE_EDIT_TOOL_DEFINITION, execute_edit
+            tool_def = FILE_EDIT_TOOL_DEFINITION.copy()
             tool_def["tool_path"] = str(Path.cwd())
             tool_def["python_callable"] = execute_edit  # Mark as Python callable
             logger.info(f"Loaded built-in tool '{tool_name}'")

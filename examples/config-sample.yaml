@@ -2,8 +2,20 @@
 # Copy this to ~/.opus/config.yaml and customize
 
 # LLM Provider Configuration
-provider: anthropic
-model: claude-sonnet-4-20250514
+# Use "oracle" for Oracle GenAI models, or "litellm" (default) for other providers
+provider: litellm
+model: gpt-4.1-mini
+
+# Examples:
+# Oracle GenAI (requires provider: oracle):
+#   provider: oracle
+#   model: xai.grok-4
+#
+# LiteLLM (supports 100+ providers):
+#   provider: litellm
+#   model: gpt-4.1-mini                    # OpenAI
+#   model: gemini/gemini-2.5-flash         # Google Gemini
+#   model: anthropic/claude-sonnet-4-20250514  # Anthropic
 
 # Agent Behavior
 max_iterations: 25  # Maximum conversation turns per request

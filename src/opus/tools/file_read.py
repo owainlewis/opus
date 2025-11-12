@@ -131,7 +131,7 @@ async def execute_read(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Tool definition for loader
-READ_TOOL_DEFINITION = {
+FILE_READ_TOOL_DEFINITION = {
     "name": "file_read",
     "description": "Read the contents of a file with line numbers. Supports reading large files with offset and limit parameters. Line numbers use the format 'N→content' where N is the line number.",
     "parameters": {

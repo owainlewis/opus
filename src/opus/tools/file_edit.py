@@ -153,7 +153,7 @@ async def execute_edit(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Tool definition for loader
-EDIT_TOOL_DEFINITION = {
+FILE_EDIT_TOOL_DEFINITION = {
     "name": "file_edit",
     "description": "Perform exact string replacement in a file. The old_string must match exactly (including whitespace and indentation). If the string appears multiple times, either provide a more unique string or use replace_all=true.",
     "parameters": {

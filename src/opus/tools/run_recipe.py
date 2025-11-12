@@ -207,7 +207,7 @@ async def _handle_markdown_recipe(recipe: Dict[str, Any], recipe_name: str, para
 
 
 # Tool definition for loader
-RECIPE_TOOL_DEFINITION = {
+RUN_RECIPE_TOOL_DEFINITION = {
     "name": "run_recipe",
     "description": "Load a recipe - a specialized, reusable prompt package that provides expert context and instructions for specific tasks. Recipes are like specialized skills that guide you through complex tasks. Examples: python-code-review, api-spec-review, weekly-report, incident-response. When you load a recipe, you receive detailed context and instructions to complete the task effectively.",
     "parameters": {
