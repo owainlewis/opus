@@ -2,6 +2,8 @@
 
 Opus is an AI-powered automation agent for your terminal. It turns any script into an intelligent tool through simple configuration, letting you chain together complex workflows with natural language. Whether you're troubleshooting production incidents, executing runbooks, or managing tribal knowledge, Opus gives you the confidence to handle modern operational complexity.
 
+![Opus Demo](assets/demo.gif)
+
 **Key Features:**
 - 🔧 **Turn any script into a tool** - Bash scripts, Python, or any executable
 - 🤖 **100+ LLM providers** - Native Oracle GenAI support + LiteLLM for Anthropic, OpenAI, Google Gemini, and more

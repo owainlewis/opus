@@ -44,8 +44,7 @@ class OpusConfig:
         self.default_timeout = config_data.get("default_timeout", 30)
 
         # UI settings
-        self.theme = config_data.get("theme", "default")
-        self.show_tool_output = config_data.get("show_tool_output", True)
+        self.show_tool_output = config_data.get("show_tool_output", False)
 
         # Parse tools configuration
         self.tools_config = config_data.get("tools", {})

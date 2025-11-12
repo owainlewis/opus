@@ -15,14 +15,8 @@ console = Console()
 # Spinner animation frames
 SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-# Global theme - will be set by agent initialization
-_current_theme: Theme = get_theme("default")
-
-
-def set_theme(theme_name: str):
-    """Set the current UI theme"""
-    global _current_theme
-    _current_theme = get_theme(theme_name)
+# Global theme
+_current_theme: Theme = get_theme()
 
 
 def get_current_theme() -> Theme:
@@ -42,21 +36,21 @@ def print_tool_call(tool_name: str, tool_args: Dict[str, Any], needs_approval: b
     theme = get_current_theme()
     text = Text()
 
-    # Colored dot for tool calls
+    # Clean prefix for tool calls
     if needs_approval:
-        text.append("● ", style=theme.warning)
+        text.append("→ ", style=theme.warning)
     else:
-        text.append("● ", style=theme.success)
+        text.append("→ ", style=theme.primary)
 
     # Tool name with theme color
-    text.append(f"{tool_name.capitalize()}", style=theme.tool_name)
+    text.append(f"{tool_name}", style=theme.tool_name)
 
     # Print args if present
     if tool_args:
         args_str = ", ".join([f"{k}={repr(v)[:50]}" for k, v in tool_args.items()])
         if len(args_str) > 80:
             args_str = args_str[:77] + "..."
-        text.append(f"({args_str})", style=theme.tool_args)
+        text.append(f" ({args_str})", style=theme.tool_args)
 
     console.print(text)
 
@@ -95,7 +89,8 @@ def print_tool_result(result: Any, max_lines: int = 5):
 
     # Show completion
     text = Text()
-    text.append("  ⎿ Done", style=f"{theme.success} dim")
+    text.append("  • ", style=theme.success)
+    text.append("Done", style=f"{theme.dim}")
     console.print(text)
     console.print()  # Add spacing after tool execution
 
@@ -111,22 +106,24 @@ def print_tool_error(error: str, will_retry: bool = False):
     theme = get_current_theme()
 
     if will_retry:
-        console.print(f"  [{theme.dim}]⎿[/{theme.dim}] [{theme.warning}]⚠ Error (will retry)[/{theme.warning}]")
+        # For retries, show minimal info
+        console.print(Text("  • Retrying...", style=theme.warning))
     else:
-        console.print(f"  [{theme.dim}]⎿[/{theme.dim}] [{theme.error}]✗ Error[/{theme.error}]")
+        # For final failures, show error
+        console.print(Text("  • Error", style=theme.error))
 
-    # Display the actual error message
-    if error:
-        # Split error into lines and display with indentation
-        error_lines = error.strip().split('\n')
-        for line in error_lines[:10]:  # Limit to first 10 lines
-            # Truncate very long lines
-            if len(line) > 120:
-                line = line[:117] + "..."
-            console.print(Text(f"    {line}", style=f"{theme.dim} {theme.error}"))
+        # Display the actual error message
+        if error:
+            # Split error into lines and display with indentation
+            error_lines = error.strip().split('\n')
+            for line in error_lines[:10]:  # Limit to first 10 lines
+                # Truncate very long lines
+                if len(line) > 120:
+                    line = line[:117] + "..."
+                console.print(Text(f"    {line}", style=f"{theme.dim} {theme.error}"))
 
-        if len(error_lines) > 10:
-            console.print(Text(f"    ... ({len(error_lines) - 10} more lines)", style=f"{theme.dim} italic {theme.error}"))
+            if len(error_lines) > 10:
+                console.print(Text(f"    ... ({len(error_lines) - 10} more lines)", style=f"{theme.dim} italic {theme.error}"))
 
 
 class ToolExecutionStatus:
@@ -251,8 +248,13 @@ class ThinkingStatus:
 
 def print_welcome_message():
     """Print welcome message on startup"""
-    console.print("[bold cyan]Opus[/bold cyan] [dim]v0.1.0[/dim]")
-    console.print("[dim]Type /help for commands or just start chatting[/dim]\n")
+    theme = get_current_theme()
+
+    # Clean, professional welcome
+    console.print()
+    console.print(f"[bold {theme.primary}]Opus[/bold {theme.primary}] [{theme.dim}]v0.1.0[/{theme.dim}]")
+    console.print(f"[{theme.dim}]AI agent for operations[/{theme.dim}]")
+    console.print(f"[{theme.dim}]Type /help for commands[/{theme.dim}]\n")
 
 
 def print_markdown(text: str):
