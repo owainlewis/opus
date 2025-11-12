@@ -1,6 +1,7 @@
 """Tool loader for loading custom script-based tools"""
 
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import yaml
@@ -25,6 +26,30 @@ class ToolLoader:
         """Initialize tool loader"""
         self.tools_by_name = {}
         self.failed_tools = {}  # Dict[tool_name, error_message]
+
+    def _validate_required_env_vars(self, tool_def: Dict[str, Any]) -> None:
+        """
+        Validate that required environment variables are set for a tool.
+        Emits warnings if any required env vars are missing.
+
+        Args:
+            tool_def: Tool definition dict
+        """
+        required_env_vars = tool_def.get("required_env_vars", [])
+        if not required_env_vars:
+            return
+
+        missing_vars = []
+        for env_var in required_env_vars:
+            if not os.environ.get(env_var):
+                missing_vars.append(env_var)
+
+        if missing_vars:
+            tool_name = tool_def.get("name", "unknown")
+            for var in missing_vars:
+                logger.warning(
+                    f"The {var} env var is not set but is required by the {tool_name} tool"
+                )
 
     def load_tools(
         self,
@@ -53,8 +78,31 @@ class ToolLoader:
                 # Custom tool with source file
                 tool, error = self._load_tool_from_file(tool_source)
                 if tool:
+                    # Validate that config key matches tool name
+                    actual_tool_name = tool.get("name")
+                    if not actual_tool_name:
+                        error_msg = f"Tool definition in {tool_source} is missing required 'name' field"
+                        logger.error(error_msg)
+                        self.failed_tools[tool_name] = error_msg
+                        continue
+
+                    if tool_name != actual_tool_name:
+                        error_msg = (
+                            f"Configuration error: Config key '{tool_name}' must match tool name '{actual_tool_name}' "
+                            f"defined in {tool_source}.\n\n"
+                            f"To fix, update your config.yaml:\n"
+                            f"  tools:\n"
+                            f"    {actual_tool_name}:  # Changed from '{tool_name}'\n"
+                            f"      enabled: true\n"
+                            f"      source: {tool_source.relative_to(config.config_dir) if tool_source.is_relative_to(config.config_dir) else tool_source}"
+                        )
+                        logger.error(error_msg)
+                        self.failed_tools[tool_name] = error_msg
+                        continue
+
                     loaded_tools.append(tool)
-                    self.tools_by_name[tool_name] = tool
+                    self.tools_by_name[actual_tool_name] = tool
+                    logger.info(f"Registered custom tool '{actual_tool_name}' from {tool_source}")
                 else:
                     self.failed_tools[tool_name] = error or "Unknown error loading tool"
             else:
@@ -105,6 +153,9 @@ class ToolLoader:
             # Ensure parameters has proper structure
             if "parameters" not in tool_def:
                 tool_def["parameters"] = {"type": "object", "properties": {}, "required": []}
+
+            # Validate required environment variables
+            self._validate_required_env_vars(tool_def)
 
             logger.info(f"Loaded tool '{tool_def['name']}' from {tool_path}")
 

@@ -128,6 +128,11 @@ class OracleProvider(LLMProvider):
                 if "tool_calls" in msg and msg["tool_calls"]:
                     tool_calls_list = []
                     for tc in msg["tool_calls"]:
+                        # Skip None tool calls
+                        if tc is None:
+                            logger.warning("Skipping None tool call in message")
+                            continue
+
                         tool_calls_list.append({
                             "id": tc.get("id", tc["function"]["name"]),
                             "name": tc["function"]["name"],
@@ -226,10 +231,18 @@ class OracleProvider(LLMProvider):
                     logger.info(f"Found tool_calls in message: {message.tool_calls}")
                     for tool_call in message.tool_calls:
                         logger.info(f"Processing tool call: {tool_call}")
+                        # Handle arguments - ensure it's never None
+                        if tool_call.arguments is None:
+                            arguments = {}
+                        elif isinstance(tool_call.arguments, str):
+                            arguments = json.loads(tool_call.arguments) if tool_call.arguments else {}
+                        else:
+                            arguments = tool_call.arguments
+
                         tool_calls.append({
                             "id": tool_call.id,
                             "name": tool_call.name,
-                            "arguments": json.loads(tool_call.arguments) if isinstance(tool_call.arguments, str) else tool_call.arguments,
+                            "arguments": arguments,
                         })
 
         logger.info(f"Extracted {len(tool_calls)} tool_calls: {tool_calls}")

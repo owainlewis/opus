@@ -150,6 +150,15 @@ class OpusAgent:
             # Get tool definition
             tool = self.tool_loader.get_tool(tool_name)
 
+            # Check if tool was found
+            if tool is None:
+                available_tools = list(self.tool_loader.tools_by_name.keys())
+                error_msg = (
+                    f"Tool '{tool_name}' not found. "
+                    f"Available tools: {', '.join(available_tools)}"
+                )
+                raise ValueError(error_msg)
+
             # Execute tool with progress indicator
             async with ToolExecutionStatus(tool_name, tool_args):
                 result = await self.executor.execute_tool(tool, tool_args)
