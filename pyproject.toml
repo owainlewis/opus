@@ -4,6 +4,22 @@ version = "0.1.0"
 description = "Terminal-based AI agent for software engineering automation"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Owain Lewis", email = "owain@owainlewis.com" }
+]
+keywords = ["ai", "agent", "automation", "llm", "cli", "terminal"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Systems Administration",
+]
 dependencies = [
     "litellm>=1.0.0",
     "pyyaml>=6.0",
@@ -13,6 +29,12 @@ dependencies = [
     "html2text>=2020.1.16",
     "oci>=2.119.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/owainlewis/opus"
+Documentation = "https://github.com/owainlewis/opus/blob/main/README.md"
+Repository = "https://github.com/owainlewis/opus"
+Issues = "https://github.com/owainlewis/opus/issues"
 
 [project.scripts]
 opus = "opus.cli:main"

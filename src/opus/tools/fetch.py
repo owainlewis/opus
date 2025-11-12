@@ -199,7 +199,7 @@ async def execute_fetch(args: Dict[str, Any]) -> Dict[str, Any]:
 
 # Tool definition for loader
 FETCH_TOOL_DEFINITION = {
-    "name": "fetch",
+    "name": "fetch_url",
     "description": "Fetch and read content from a URL. Use this to access web pages, documentation, API references, or any web content. Returns the content as markdown text.",
     "parameters": {
         "type": "object",

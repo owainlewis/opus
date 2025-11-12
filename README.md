@@ -14,12 +14,17 @@ Opus is an AI-powered automation agent for your terminal. It turns any script in
 ### Installation
 
 ```bash
-# Install with uv (recommended)
-uv pip install opus-agent
+# Install as a uv tool (recommended - installs globally)
+uv tool install opus
+
+# Or install with uv pip
+uv pip install opus
 
 # Or with pip
-pip install opus-agent
+pip install opus
 ```
+
+Once installed, the `opus` command will be available in your terminal.
 
 ### Configuration
 
@@ -174,7 +179,7 @@ opus/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/opus.git
+git clone https://github.com/owainlewis/opus.git
 cd opus
 
 # Install dependencies

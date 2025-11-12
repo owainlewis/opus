@@ -8,6 +8,9 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+# Built-in tools that are always available
+BUILTIN_TOOLS = ["bash", "file_read", "file_write", "file_edit", "fetch_url", "run_recipe", "get_current_time"]
+
 
 class OpusConfig:
     """
@@ -88,14 +91,27 @@ class OpusConfig:
         """
         Get list of enabled tools.
 
+        Built-in tools (bash, file_read, file_write, file_edit, fetch_url, run_recipe,
+        get_current_time, search_jira, get_jira_issue, create_jira_issue) are always
+        enabled unless explicitly disabled in config. Custom tools must be listed in config.
+
         Returns:
             List of tool names that are enabled
         """
-        return [
-            tool_name
-            for tool_name, tool_config in self.tools_config.items()
-            if tool_config.get("enabled", True)
-        ]
+        enabled = []
+
+        # Add built-in tools (enabled by default, unless explicitly disabled)
+        for builtin_tool in BUILTIN_TOOLS:
+            tool_config = self.tools_config.get(builtin_tool, {})
+            if tool_config.get("enabled", True):  # Default to enabled
+                enabled.append(builtin_tool)
+
+        # Add custom tools from config (must be explicitly listed with source)
+        for tool_name, tool_config in self.tools_config.items():
+            if tool_name not in BUILTIN_TOOLS and tool_config.get("enabled", True):
+                enabled.append(tool_name)
+
+        return enabled
 
     def get_tool_config(self, tool_name: str) -> Dict[str, Any]:
         """
