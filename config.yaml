@@ -1,33 +1,6 @@
 provider: oracle
-model: xai.grok-4
+model: xai.grok-4-fast-non-thinking
 show_tool_output: false
 
 # Built-in tools (bash, file_read, file_write, file_edit, fetch_url, run_recipe, get_current_time)
 # are always enabled by default. You can optionally configure approval settings or disable them here.
-tools:
-  # Custom tool with source file
-  fetch_logs:
-    enabled: true
-    approval: true
-    source: ./examples/tools/fetch-logs.yaml
-
-  get_oci_regions:
-    enabled: true
-    approval: false
-    source: ~/.opus/tools/regions/tool.yaml
-
-  search_jira:
-    enabled: true
-    approval: false
-    source: ~/.opus/tools/jira/search_jira.yaml
-
-  get_jira_issue:
-    enabled: true
-    approval: false
-    source: ~/.opus/tools/jira/get_jira_issue.yaml
-
-  create_jira_issue:
-    enabled: true
-    approval: false
-    source: ~/.opus/tools/jira/create_jira_issue.yaml
-
