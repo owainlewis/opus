@@ -86,7 +86,7 @@ class OpusAgent:
             True if approval is needed, False otherwise
         """
         # Check if tool is configured to require approval
-        return self.config.get_tool_config(tool_name).get("approval", False)
+        return self.config.get_tool_config(tool_name).approval
 
     def _prompt_user_approval(self, tool_name: str, tool_args: Dict[str, Any]) -> bool:
         """

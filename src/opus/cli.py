@@ -12,6 +12,7 @@ from rich.text import Text
 from opus.agent import OpusAgent
 from opus.console_helper import print_markdown, console, get_current_theme
 from opus.ui import create_simple_ui
+from opus.models import MODEL_ALIASES
 
 
 def setup_logging(verbose: bool = False):
@@ -59,13 +60,24 @@ async def handle_slash_command(command: str, agent: OpusAgent) -> bool:
         help_text = """
 # Commands
 
-`/help`      Show this help
-`/tools`     List available tools
-`/clear`     Clear conversation history
-`/raw <cmd>` Execute shell command directly
-`/exit`      Exit Opus
+`/help`        Show this help
+`/tools`       List available tools
+`/model <name>` Switch LLM model mid-conversation
+`/clear`       Clear conversation history
+`/raw <cmd>`   Execute shell command directly
+`/exit`        Exit Opus
 
 Config: `~/.opus/config.yaml`
+
+## Model Switching
+
+Use `/model <name>` to switch the LLM model during a conversation.
+You can use model aliases (e.g., `sonnet`, `4o`, `mini`) or full model names.
+
+Examples:
+- `/model sonnet`  - Switch to Claude Sonnet 4
+- `/model 4o`      - Switch to GPT-4o
+- `/model mini`    - Switch to GPT-4.1 Mini
 """
         print_markdown(help_text)
         return True
@@ -73,6 +85,66 @@ Config: `~/.opus/config.yaml`
     elif command == "/clear":
         agent.messages.clear()
         console.print("[dim]Conversation history cleared[/dim]")
+        return True
+
+    elif command.startswith("/model"):
+        # Handle model switching
+        parts = command.split(maxsplit=1)
+        if len(parts) < 2:
+            console.print("[yellow]Usage: /model <model-name>[/yellow]")
+            console.print("\n[dim]Available aliases:[/dim]")
+            for alias, full_name in sorted(MODEL_ALIASES.items()):
+                console.print(f"  [cyan]{alias:15}[/cyan] → {full_name}")
+            console.print("\n[dim]Or use a full model name (e.g., gpt-4o)[/dim]")
+            return True
+
+        new_model = parts[1].strip()
+
+        # Resolve alias if it exists
+        resolved_model = MODEL_ALIASES.get(new_model, new_model)
+
+        # Show what we're switching to
+        if new_model != resolved_model:
+            console.print(f"[dim]Resolving alias '{new_model}' → '{resolved_model}'[/dim]")
+
+        console.print(f"[cyan]Switching to model:[/cyan] {resolved_model}")
+
+        try:
+            # Update config
+            agent.config.model = resolved_model
+
+            # Auto-detect and update provider if needed
+            from opus.models.config import PROVIDER_PREFIXES
+            for prefix, provider in PROVIDER_PREFIXES.items():
+                if resolved_model.startswith(prefix):
+                    if provider != agent.config.provider:
+                        agent.config.provider = provider
+                        console.print(f"[dim]Auto-detected provider: {provider}[/dim]")
+                    break
+
+            # Reinitialize LLM provider with new model
+            from opus.providers.factory import ProviderFactory
+            from opus.prompt import create_system_prompt
+
+            system_prompt = create_system_prompt(
+                tools=agent.tools,
+                model=agent.config.model,
+                provider=agent.config.provider
+            )
+
+            agent.llm = ProviderFactory.create(
+                config=agent.config,
+                tools=agent.tools,
+                system_prompt=system_prompt,
+            )
+
+            console.print(f"[green]✓[/green] Model switched to [bold]{resolved_model}[/bold]")
+            console.print("[dim]Conversation history preserved[/dim]")
+
+        except Exception as e:
+            console.print(f"[red]Error switching model: {e}[/red]")
+            logging.exception("Model switch failed")
+
         return True
 
     elif command == "/tools":
@@ -83,7 +155,7 @@ Config: `~/.opus/config.yaml`
         for tool in agent.tools:
             name = tool["name"]
             desc = tool.get("description", "")
-            needs_approval = agent.config.get_tool_config(name).get("approval", False)
+            needs_approval = agent.config.get_tool_config(name).approval
 
             tool_line = Text()
             tool_line.append(" ")
@@ -357,17 +429,21 @@ model: {model}
 # Supported configurations:
 # Oracle GenAI (requires provider: oracle):
 #   provider: oracle
-#   model: xai.grok-4
-#   model: cohere.command-r-plus
-#   model: meta.llama-3-1-405b-instruct
+#   model: xai.grok-4           # Or use alias: grok
+#   model: cohere.command-r-plus  # Or use alias: command-r
+#   model: meta.llama-3-1-405b-instruct  # Or use alias: llama
 #
 # LiteLLM (supports 100+ providers, use provider: litellm):
-#   model: gpt-4.1-mini                      # OpenAI
-#   model: gpt-4o                            # OpenAI
-#   model: gemini/gemini-2.5-flash           # Google Gemini
-#   model: gemini/gemini-1.5-pro             # Google Gemini
-#   model: anthropic/claude-sonnet-4-20250514  # Anthropic
-#   model: anthropic/claude-3-5-sonnet-20241022  # Anthropic
+#   model: gpt-4.1-mini                      # OpenAI (alias: mini)
+#   model: gpt-4o                            # OpenAI (alias: 4o)
+#   model: gemini/gemini-2.5-flash           # Google Gemini (alias: flash)
+#   model: gemini/gemini-1.5-pro             # Google Gemini (alias: gemini)
+#   model: anthropic/claude-sonnet-4-20250514  # Anthropic (alias: sonnet)
+#   model: anthropic/claude-3-5-sonnet-20241022  # Anthropic (alias: sonnet-3.5)
+#
+# Model Aliases: You can use short aliases instead of full model names
+# Example: Use 'sonnet' instead of 'anthropic/claude-sonnet-4-20250514'
+# Use /model command to switch models during conversation (e.g., /model sonnet)
 
 # Agent Behavior
 max_iterations: 25  # Maximum conversation turns per request
