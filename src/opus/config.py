@@ -35,8 +35,8 @@ class OpusConfig:
         self.config_dir = self.config_path.parent if config_path else Path.cwd()
 
         # LLM settings
-        self.provider = config_data.get("provider", "anthropic")
-        self.model = config_data.get("model", "claude-sonnet-4-20250514")
+        self.provider = config_data.get("provider", "litellm")
+        self.model = config_data.get("model", "gpt-4.1-mini")
 
         # Agent behavior settings
         self.max_iterations = config_data.get("max_iterations", 25)

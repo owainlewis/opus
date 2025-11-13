@@ -37,6 +37,10 @@ def setup_logging(verbose: bool = False):
         ]
     )
 
+    # Suppress LiteLLM's noisy INFO logs
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 async def handle_slash_command(command: str, agent: OpusAgent) -> bool:
     """
