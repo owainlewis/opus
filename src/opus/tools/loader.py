@@ -203,6 +203,15 @@ class ToolLoader:
             logger.info(f"Loaded built-in tool '{tool_name}'")
             return tool_def
 
+        # Import run_subagents tool definition if needed
+        if tool_name == "run_subagents":
+            from opus.tools.run_subagents import RUN_SUBAGENTS_TOOL_DEFINITION, execute_run_subagents
+            tool_def = RUN_SUBAGENTS_TOOL_DEFINITION.copy()
+            tool_def["tool_path"] = str(Path.cwd())
+            tool_def["python_callable"] = execute_run_subagents  # Mark as Python callable
+            logger.info(f"Loaded built-in tool '{tool_name}'")
+            return tool_def
+
         # Import file_read tool definition if needed
         if tool_name == "file_read":
             from opus.tools.file_read import FILE_READ_TOOL_DEFINITION, execute_read
