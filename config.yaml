@@ -1,5 +1,5 @@
-provider: oracle
-model: xai.grok-4-fast-non-thinking
+provider: litellm
+model: gpt-4.1-mini
 show_tool_output: false
 
 # Built-in tools (bash, file_read, file_write, file_edit, fetch_url, run_recipe, get_current_time)

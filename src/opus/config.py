@@ -9,7 +9,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 # Built-in tools that are always available
-BUILTIN_TOOLS = ["bash", "file_read", "file_write", "file_edit", "fetch_url", "run_recipe", "get_current_time"]
+BUILTIN_TOOLS = ["bash", "file_read", "file_write", "file_edit", "fetch_url", "run_recipe", "get_current_time", "run_subagents"]
 
 
 class OpusConfig:
@@ -42,6 +42,10 @@ class OpusConfig:
         self.max_iterations = config_data.get("max_iterations", 25)
         self.max_retry_attempts = 2  # Hardcoded - rarely needs adjustment
         self.default_timeout = config_data.get("default_timeout", 30)
+
+        # Sub-agent settings
+        self.subagent_max_turns = config_data.get("subagent_max_turns", 15)
+        self.subagent_timeout = config_data.get("subagent_timeout", 300)  # 5 minutes
 
         # UI settings
         self.show_tool_output = config_data.get("show_tool_output", False)

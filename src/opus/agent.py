@@ -35,14 +35,22 @@ class OpusAgent:
     - Configuration
     """
 
-    def __init__(self, config_path: str = None):
+    def __init__(
+        self,
+        config_path: str = None,
+        is_subagent: bool = False,
+        initial_messages: List[Dict[str, str]] = None
+    ):
         """
         Initialize the agent with configuration.
 
         Args:
             config_path: Path to config.yaml file (None = use default)
+            is_subagent: Whether this is a sub-agent (prevents recursive sub-agent spawning)
+            initial_messages: Optional initial message history (for sub-agents with context)
         """
         self.config = OpusConfig.from_yaml(config_path)
+        self.is_subagent = is_subagent
         self.messages = []
 
         # Initialize tool executor with default timeout
@@ -59,7 +67,17 @@ class OpusAgent:
             enabled_tools=enabled_tools
         )
 
+        # If this is a sub-agent, filter out run_subagents to prevent recursion
+        if is_subagent and "run_subagents" in self.tools:
+            logger.info("Sub-agent: filtering out run_subagents tool to prevent recursion")
+            self.tools = {k: v for k, v in self.tools.items() if k != "run_subagents"}
+
         logger.info(f"Loaded {len(self.tools)} tools")
+
+        # Add initial messages if provided (for sub-agents with context)
+        if initial_messages:
+            self.messages.extend(initial_messages)
+            logger.info(f"Initialized with {len(initial_messages)} initial messages")
 
         # Build system prompt with dynamic variables
         system_prompt = create_system_prompt(
@@ -262,8 +280,10 @@ class OpusAgent:
         # Reset execution tracker for new conversation turn
         self.execution_tracker.reset()
 
-        # Add user message to history
-        self.messages.append({"role": "user", "content": user_message})
+        # Add user message to history (unless it's empty and we already have messages)
+        # This handles the sub-agent case where initial_messages are provided
+        if user_message or not self.messages:
+            self.messages.append({"role": "user", "content": user_message})
 
         # Conversation loop with configurable max iterations
         max_iterations = self.config.max_iterations
