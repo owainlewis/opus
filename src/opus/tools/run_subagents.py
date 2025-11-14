@@ -117,22 +117,17 @@ def _build_initial_messages(prompt: str, context: Optional[str]) -> List[Dict[st
     Returns:
         List of message dicts for initial history
     """
-    messages = []
-
+    # Combine context and prompt into a single user message to avoid
+    # multiple consecutive user messages which can confuse LLMs
     if context:
-        # Add context as first message
-        messages.append({
-            "role": "user",
-            "content": f"Here is the context for your task:\n\n{context}"
-        })
+        content = f"Here is the context for your task:\n\n{context}\n\n---\n\n{prompt}"
+    else:
+        content = prompt
 
-    # Add the actual task prompt
-    messages.append({
+    return [{
         "role": "user",
-        "content": prompt
-    })
-
-    return messages
+        "content": content
+    }]
 
 
 async def _spawn_subagent(
@@ -210,7 +205,8 @@ async def _spawn_subagent(
         )
 
         # Run the sub-agent with timeout
-        timeout = config.default_timeout if hasattr(config, 'default_timeout') else DEFAULT_SUBAGENT_TIMEOUT
+        # Use subagent-specific timeout (default 300s), not the general tool timeout
+        timeout = config.subagent_timeout if hasattr(config, 'subagent_timeout') else DEFAULT_SUBAGENT_TIMEOUT
 
         try:
             # The sub-agent already has initial messages, so we pass empty string

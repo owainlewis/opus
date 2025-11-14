@@ -280,8 +280,10 @@ class OpusAgent:
         # Reset execution tracker for new conversation turn
         self.execution_tracker.reset()
 
-        # Add user message to history
-        self.messages.append({"role": "user", "content": user_message})
+        # Add user message to history (unless it's empty and we already have messages)
+        # This handles the sub-agent case where initial_messages are provided
+        if user_message or not self.messages:
+            self.messages.append({"role": "user", "content": user_message})
 
         # Conversation loop with configurable max iterations
         max_iterations = self.config.max_iterations
