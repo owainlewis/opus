@@ -307,9 +307,6 @@ class OpusAgent:
                     logger.info("Agent conversation complete")
                     return response["message"]
 
-                # Note: Assistant reasoning messages are not displayed
-                # The full response is sent to the LLM for context
-
                 # Execute tool calls in parallel when possible
                 tool_names = [tc["name"] for tc in response["tool_calls"]]
                 logger.info(

@@ -1,0 +1,46 @@
+# Example Opus configuration for Kimi K2 Thinking
+# OpenAI-compatible API with reasoning support
+
+provider: openai
+model: kimi-k2-thinking  # or kimi-k2-thinking-turbo
+
+# OpenAI-specific settings (works with OpenAI-compatible APIs)
+openai_base_url: https://api.moonshot.cn/v1  # Kimi/Moonshot API endpoint
+openai_api_key: ${KIMI_API_KEY}  # Get from https://platform.moonshot.cn
+openai_max_tokens: 4096
+
+# Display reasoning/thinking process
+show_reasoning_content: true  # Shows Kimi K2's step-by-step reasoning!
+
+# Agent behavior
+max_iterations: 25
+max_retry_attempts: 2
+
+# UI settings
+show_tool_output: false
+
+# Tools configuration
+tools:
+  bash:
+    enabled: true
+  file_read:
+    enabled: true
+  file_write:
+    enabled: true
+  file_edit:
+    enabled: true
+  fetch_url:
+    enabled: true
+  run_recipe:
+    enabled: true
+  get_current_time:
+    enabled: true
+  run_subagents:
+    enabled: true
+
+# Notes:
+# - Kimi K2 Thinking exposes reasoning_content showing its internal thinking
+# - Set show_reasoning_content: true to see the model's reasoning process
+# - The reasoning trace helps understand how the model approaches problems
+# - Kimi K2 can execute 200-300 sequential tool calls autonomously
+# - Pricing: $0.60/M input tokens, $2.50/M output tokens (very affordable!)

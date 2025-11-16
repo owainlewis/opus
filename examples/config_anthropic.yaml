@@ -1,0 +1,42 @@
+# Example Opus configuration for Anthropic Claude
+# Native Anthropic provider with prompt caching
+
+provider: anthropic
+model: claude-sonnet-4-20250514  # or claude-3-5-sonnet-20241022
+
+# Anthropic-specific settings
+anthropic_api_key: ${ANTHROPIC_API_KEY}  # Or set via environment variable
+anthropic_prompt_caching: true           # Enable prompt caching (reduces costs)
+anthropic_max_tokens: 4096               # Max tokens in response (up to 200K for some models)
+
+# Agent behavior
+max_iterations: 25
+max_retry_attempts: 2
+default_timeout: 30
+
+# Sub-agent settings
+subagent_max_turns: 15
+subagent_timeout: 300
+
+# UI settings
+show_tool_output: false
+show_reasoning_content: true  # Show extended thinking if available
+
+# Tools configuration
+tools:
+  bash:
+    enabled: true
+  file_read:
+    enabled: true
+  file_write:
+    enabled: true
+  file_edit:
+    enabled: true
+  fetch_url:
+    enabled: true
+  run_recipe:
+    enabled: true
+  get_current_time:
+    enabled: true
+  run_subagents:
+    enabled: true

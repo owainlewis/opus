@@ -21,14 +21,28 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
-    "litellm>=1.0.0",
     "pyyaml>=6.0",
     "rich>=13.0.0",
     "click>=8.1.0",
     "httpx>=0.27.0",
     "html2text>=2020.1.16",
-    "oci>=2.119.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
 ]
+
+[project.optional-dependencies]
+# LLM Provider SDKs (install what you need)
+anthropic = ["anthropic>=0.40.0"]
+openai = ["openai>=1.50.0"]
+oracle = ["oci>=2.119.0"]
+litellm = ["litellm>=1.0.0"]
+
+# Provider bundles
+providers-native = ["anthropic>=0.40.0", "openai>=1.50.0"]  # Most common native providers
+providers-all = ["anthropic>=0.40.0", "openai>=1.50.0", "oci>=2.119.0", "litellm>=1.0.0"]  # All providers
+
+# Convenience: all optional dependencies
+all = ["anthropic>=0.40.0", "openai>=1.50.0", "oci>=2.119.0", "litellm>=1.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/owainlewis/opus"

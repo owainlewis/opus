@@ -1,0 +1,37 @@
+# Example Opus configuration for OpenAI Responses API
+# The Responses API is OpenAI's most advanced interface with better support
+# for new models and features (stateful conversations, better model support)
+
+provider: openai
+model: gpt-4.1  # or gpt-4.1-mini, gpt-5, etc.
+
+# OpenAI-specific settings
+openai_api_key: ${OPENAI_API_KEY}  # Or set via environment variable
+openai_api_type: responses  # Use the new Responses API (default: chat_completions)
+openai_max_tokens: 4096
+
+# Agent behavior
+max_iterations: 25
+max_retry_attempts: 2
+
+# UI settings
+show_tool_output: false
+
+# Tools configuration
+tools:
+  bash:
+    enabled: true
+  file_read:
+    enabled: true
+  file_write:
+    enabled: true
+  file_edit:
+    enabled: true
+  fetch_url:
+    enabled: true
+  run_recipe:
+    enabled: true
+  get_current_time:
+    enabled: true
+  run_subagents:
+    enabled: true

@@ -126,6 +126,56 @@ def print_tool_error(error: str, will_retry: bool = False):
                 console.print(Text(f"    ... ({len(error_lines) - 10} more lines)", style=f"{theme.dim} italic {theme.error}"))
 
 
+def print_reasoning_content(reasoning: str, model: str = ""):
+    """
+    Print reasoning/thinking content from reasoning models.
+
+    Displays the model's internal reasoning/thinking content when available.
+
+    Args:
+        reasoning: The reasoning/thinking content to display
+        model: Optional model name to show in the header
+    """
+    if not reasoning or not reasoning.strip():
+        return
+
+    theme = get_current_theme()
+
+    # Header
+    text = Text()
+    text.append("🧠 Thinking", style=f"bold {theme.info}")
+    if model:
+        text.append(f" ({model})", style=theme.dim)
+    console.print(text)
+
+    # Display reasoning content with indentation
+    reasoning_lines = reasoning.strip().split('\n')
+
+    # Show first 20 lines of reasoning (can be configured)
+    max_lines = 20
+    for i, line in enumerate(reasoning_lines[:max_lines]):
+        # Add tree-like prefix for visual hierarchy
+        if i == len(reasoning_lines[:max_lines]) - 1 and len(reasoning_lines) <= max_lines:
+            prefix = "   └─ "
+        else:
+            prefix = "   │ "
+
+        # Truncate very long lines
+        if len(line) > 100:
+            line = line[:97] + "..."
+
+        console.print(Text(f"{prefix}{line}", style=theme.dim))
+
+    # Show truncation message if there are more lines
+    if len(reasoning_lines) > max_lines:
+        console.print(Text(f"   └─ ... ({len(reasoning_lines) - max_lines} more lines)", style=f"{theme.dim} italic"))
+
+    # Show token count if available (estimate)
+    token_count = len(reasoning.split())  # Rough estimate
+    console.print(Text(f"   [{token_count:,} reasoning tokens (approx)]", style=f"{theme.dim} italic"))
+    console.print()  # Add spacing
+
+
 class ToolExecutionStatus:
     """
     Context manager for showing tool execution status with progress indicator.
