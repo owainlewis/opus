@@ -63,4 +63,5 @@ packages = ["src/opus"]
 [dependency-groups]
 dev = [
     "ipykernel>=7.1.0",
+    "pytest>=8.0.0",
 ]
