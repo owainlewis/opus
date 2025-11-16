@@ -28,21 +28,20 @@ dependencies = [
     "html2text>=2020.1.16",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
 ]
 
 [project.optional-dependencies]
-# LLM Provider SDKs (install what you need)
-anthropic = ["anthropic>=0.40.0"]
-openai = ["openai>=1.50.0"]
+# Additional LLM Provider SDKs (OpenAI and Anthropic are included by default)
 oracle = ["oci>=2.119.0"]
 litellm = ["litellm>=1.0.0"]
 
 # Provider bundles
-providers-native = ["anthropic>=0.40.0", "openai>=1.50.0"]  # Most common native providers
-providers-all = ["anthropic>=0.40.0", "openai>=1.50.0", "oci>=2.119.0", "litellm>=1.0.0"]  # All providers
+providers-all = ["oci>=2.119.0", "litellm>=1.0.0"]  # All optional providers
 
 # Convenience: all optional dependencies
-all = ["anthropic>=0.40.0", "openai>=1.50.0", "oci>=2.119.0", "litellm>=1.0.0"]
+all = ["oci>=2.119.0", "litellm>=1.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/owainlewis/opus"
