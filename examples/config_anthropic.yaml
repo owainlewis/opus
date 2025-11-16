@@ -20,7 +20,6 @@ subagent_timeout: 300
 
 # UI settings
 show_tool_output: false
-show_reasoning_content: true  # Show extended thinking if available
 
 # Tools configuration
 tools:

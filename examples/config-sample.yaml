@@ -2,49 +2,69 @@
 # Copy this to ~/.opus/config.yaml and customize
 
 # LLM Provider Configuration
-# Use "oracle" for Oracle GenAI models, or "litellm" (default) for other providers
-provider: litellm
-model: gpt-4.1-mini
+provider: anthropic
+model: claude-sonnet-4-20250514
 
-# Examples:
-# Oracle GenAI (requires provider: oracle):
-#   provider: oracle
-#   model: xai.grok-4
+# Other provider examples:
+# provider: openai
+# model: gpt-4.1-mini
 #
-# LiteLLM (supports 100+ providers):
-#   provider: litellm
-#   model: gpt-4.1-mini                    # OpenAI
-#   model: gemini/gemini-2.5-flash         # Google Gemini
-#   model: anthropic/claude-sonnet-4-20250514  # Anthropic
+# provider: oracle
+# model: xai.grok-4
+#
+# provider: litellm
+# model: gemini/gemini-2.5-flash
 
 # Agent Behavior
-max_iterations: 25  # Maximum conversation turns per request
-default_timeout: 30  # Default timeout for tool execution (seconds)
+max_iterations: 25
+default_timeout: 30
 
 # Tools Configuration
+# Built-in tools are enabled by default
+# You can configure approval settings or disable them
 tools:
-  # Built-in tools
   bash:
     enabled: true
-    approval: true  # Require user approval before running bash commands
+    approval: true  # Require approval for bash commands
 
-  read:
+  file_read:
     enabled: true
-    approval: false  # Read operations don't need approval
+    approval: false
 
-  fetch:
+  file_write:
     enabled: true
-    approval: false  # Web fetch doesn't need approval
+    approval: true
 
-  # Custom tools - reference external YAML files
-  # See examples/tools/ for examples of custom tool definitions
-  #
-  # Custom tools support JSON Schema for parameters, including:
-  # - enum: Constrain values to specific options (helps LLM choose correctly)
-  # - default: Provide default values for optional parameters
-  # - required: Mark which parameters are mandatory
-  #
-  # fetch_logs:
-  #   enabled: true
-  #   approval: false
-  #   source: ./tools/fetch-logs.yaml
+  file_edit:
+    enabled: true
+    approval: true
+
+  fetch_url:
+    enabled: true
+    approval: false
+
+  run_recipe:
+    enabled: true
+    approval: false
+
+  get_current_time:
+    enabled: true
+    approval: false
+
+  run_subagents:
+    enabled: true
+    approval: false
+
+# Custom Tools
+# Reference external tool definitions
+#
+# Custom tools support JSON Schema parameters with features like:
+# - enum: Constrain values to specific options
+# - default: Provide default values
+# - required: Mark mandatory parameters
+#
+# Example:
+#   deploy_service:
+#     enabled: true
+#     approval: true
+#     source: ./tools/deploy.yaml

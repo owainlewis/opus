@@ -1,24 +1,19 @@
 # Opus
 
-Opus is an AI-powered automation agent for your terminal. It turns any script into an intelligent tool through simple configuration, letting you chain together complex workflows with natural language. Whether you're troubleshooting production incidents, executing runbooks, or managing tribal knowledge, Opus gives you the confidence to handle modern operational complexity.
+Opus is an AI-powered automation agent for your terminal. It turns any script into an intelligent tool through simple configuration, letting you chain together complex workflows with natural language.
 
 **Key Features:**
-- 🔧 **Turn any script into a tool** - Bash scripts, Python, or any executable
-- 🤖 **Any LLM provider** - Native Oracle GenAI support + LiteLLM for Anthropic, OpenAI, Google Gemini, and more
-- 🔒 **Enterprise-ready** - Per-tool approval settings, no vendor lock-in
-- 📋 **Recipes (Runbooks)** - Interactive, reusable workflows
-- 🎯 **Simple configuration** - YAML-based tool definitions
+- Turn any script into a tool that AI can use (Bash, Python, or any executable)
+- Native support for Anthropic Claude, OpenAI, Oracle GenAI, plus 100+ providers via LiteLLM
+- Per-tool approval settings for safe automation
+- Recipes for reusable workflows and runbooks
+- Simple YAML configuration
 
-## Quick Start
-
-### Installation
+## Installation
 
 ```bash
-# Install as a uv tool (recommended - installs globally)
+# Install with uv (recommended)
 uv tool install opus
-
-# Or install with uv pip
-uv pip install opus
 
 # Or with pip
 pip install opus
@@ -26,75 +21,89 @@ pip install opus
 
 Once installed, the `opus` command will be available in your terminal.
 
-### Configuration
+## Quick Start
 
-Create `~/.opus/config.yaml`:
+Create a config file at `~/.opus/config.yaml`:
 
 ```yaml
-# LLM Provider Configuration
-# Use "oracle" for Oracle GenAI, "litellm" (default) for other providers
-provider: litellm
-model: gpt-4.1-mini
+# Choose your provider and model
+provider: anthropic
+model: claude-sonnet-4-20250514
 
-# Oracle GenAI examples (use provider: oracle):
-# provider: oracle
-# model: xai.grok-4
-# model: cohere.command-r-plus
-
-# LiteLLM examples (use provider: litellm):
-# model: gpt-4.1-mini                      # OpenAI
-# model: gemini/gemini-2.5-flash           # Google
-# model: anthropic/claude-sonnet-4-20250514  # Anthropic
-
+# Built-in tools are enabled by default
+# You can configure approval settings
 tools:
   bash:
-    enabled: true
     approval: true  # Require approval for bash commands
-
-  file_read:
-    enabled: true
-    approval: false
-
-  fetch_url:
-    enabled: true
-    approval: false
 ```
 
-Set your API key (depends on provider):
+Set your API key:
+
 ```bash
-# For OpenAI
-export OPENAI_API_KEY=your-key-here
-
-# For Google Gemini
-export GOOGLE_API_KEY=your-key-here
-
-# For Anthropic
 export ANTHROPIC_API_KEY=your-key-here
-
-# For Oracle GenAI (OCI CLI config required)
-# See: https://docs.oracle.com/en-us/iaas/Content/API/Concepts/sdkconfig.htm
 ```
 
-### Basic Usage
+Run Opus:
 
-**Interactive mode:**
 ```bash
+# Interactive mode
 opus
-```
 
-**Single command:**
-```bash
+# Single command
 opus -m "Check disk usage on /var/log"
-```
 
-**Run with specific config:**
-```bash
+# Use specific config
 opus -c /path/to/config.yaml
 ```
 
+## Providers
+
+Opus has native support for several providers, which gives you access to advanced features like prompt caching and custom endpoints.
+
+**Anthropic** (recommended for most use cases)
+```yaml
+provider: anthropic
+model: claude-sonnet-4-20250514
+```
+
+Anthropic's native provider includes prompt caching, which can significantly reduce costs for repeated operations.
+
+**OpenAI**
+```yaml
+provider: openai
+model: gpt-4.1-mini
+```
+
+The OpenAI provider supports both standard models and OpenAI-compatible APIs. You can use services like Kimi, DeepSeek, or OpenRouter by setting a custom base URL:
+
+```yaml
+provider: openai
+model: kimi-k2-thinking
+openai_base_url: https://api.moonshot.cn/v1
+openai_api_key: ${KIMI_API_KEY}
+```
+
+**Oracle GenAI**
+```yaml
+provider: oracle
+model: xai.grok-4
+```
+
+Oracle's provider gives you access to models like Grok, Cohere Command R+, and Meta Llama through Oracle's GenAI service.
+
+**LiteLLM (100+ providers)**
+```yaml
+provider: litellm
+model: gemini/gemini-2.5-flash
+```
+
+LiteLLM supports over 100 providers including Google Gemini, Azure OpenAI, Together AI, Groq, and many others. See the [LiteLLM docs](https://docs.litellm.ai/docs/providers) for the complete list.
+
+For more details on providers and their features, see [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
 ## Creating Custom Tools
 
-Opus lets you turn any script into an AI-accessible tool. Create a YAML file:
+You can turn any script into a tool that Opus can use. Create a YAML file that describes your tool:
 
 ```yaml
 # tools/deploy.yaml
@@ -108,7 +117,7 @@ parameters:
   properties:
     service:
       type: string
-      enum: ["api", "worker", "frontend"]  # Helps LLM choose correctly
+      enum: ["api", "worker", "frontend"]
       description: Service to deploy
     environment:
       type: string
@@ -121,113 +130,61 @@ parameters:
 timeout: 300
 ```
 
-Add to your config:
+Reference your custom tool in the config:
+
 ```yaml
 tools:
-  deploy:
+  deploy_service:
     enabled: true
     approval: true
     source: ./tools/deploy.yaml
 ```
 
-See [examples/tools/](examples/tools/) for more examples.
+See [docs/TOOLS.md](docs/TOOLS.md) for more information on creating custom tools.
 
-## Recipes (Runbooks)
+## Recipes
 
-Recipes are interactive runbooks that guide you through multi-step workflows:
+Recipes are reusable prompt templates for specialized tasks. They package expertise and best practices into a format that Opus can use to handle complex workflows.
 
 ```bash
-# List available recipes
-opus recipe list
-
-# Run a recipe
-opus recipe run incident-triage \
-  --params service=api \
-  --params severity=P1
+opus -m "Review src/app.py using the python-code-review recipe"
 ```
 
-See [docs/RECIPES.md](docs/RECIPES.md) for full documentation.
+You can create your own recipes to capture domain knowledge, standard procedures, or common tasks. See [docs/RECIPES.md](docs/RECIPES.md) for details.
 
-## Supported LLM Providers
+## Built-in Tools
 
-Opus supports two provider modes:
+Opus comes with several built-in tools that are always available:
 
-### Oracle GenAI (Native Provider)
-For Oracle GenAI models, use `provider: oracle` for optimal performance:
+- `bash` - Execute shell commands
+- `file_read` - Read files from disk
+- `file_write` - Create or overwrite files
+- `file_edit` - Edit existing files
+- `fetch_url` - Fetch content from URLs
+- `run_recipe` - Execute recipes
+- `get_current_time` - Get current date and time
+- `run_subagents` - Spawn parallel agents for independent tasks
 
-```yaml
-provider: oracle
-model: xai.grok-4                    # XAI Grok
-model: cohere.command-r-plus         # Cohere Command R+
-model: meta.llama-3-1-405b-instruct  # Meta Llama 3.1
-```
+All built-in tools are enabled by default. You can disable them or configure approval settings in your config file.
 
-### LiteLLM (Universal Provider)
-For all other providers, use `provider: litellm` (default):
+## Example Configs
 
-| Provider | Example Models | Model String Format |
-|----------|----------------|---------------------|
-| **OpenAI** | GPT-4.1 Mini, GPT-4o | `gpt-4.1-mini`, `gpt-4o` |
-| **Google Gemini** | Gemini 2.5 Flash, 1.5 Pro | `gemini/gemini-2.5-flash` |
-| **Anthropic** | Claude Sonnet 4, Opus 4 | `anthropic/claude-sonnet-4-20250514` |
+The `examples/` directory contains complete configuration examples:
 
-LiteLLM supports 100+ providers. See [LiteLLM docs](https://docs.litellm.ai/docs/providers) for the complete list.
-
-## Tool Approval Modes
-
-Control which tools require user approval:
-
-```yaml
-tools:
-  bash:
-    approval: true   # Always ask
-
-  read:
-    approval: false  # Auto-approve (safe operations)
-```
-
-## Project Structure
-
-```
-opus/
-├── src/opus/           # Core agent code
-├── examples/           # Example configs and tools
-│   └── tools/          # Custom tool examples
-├── docs/               # Documentation
-└── recipes/            # Runbook examples
-```
+- `examples/config_anthropic.yaml` - Anthropic with prompt caching
+- `examples/config_openai.yaml` - OpenAI with standard models
+- `examples/config_kimi_k2.yaml` - Kimi K2 via Moonshot API
+- `examples/config-sample.yaml` - General configuration template
 
 ## Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/owainlewis/opus.git
 cd opus
-
-# Install dependencies
 uv sync
-
-# Run in development mode
 uv run opus
 ```
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-## Acknowledgments
-
-Built with:
-- [LiteLLM](https://docs.litellm.ai/) for universal LLM support
-- [Rich](https://rich.readthedocs.io/) for beautiful terminal output
-
-Supports models from:
-- [Anthropic Claude](https://www.anthropic.com/)
-- [OpenAI](https://openai.com/)
-- [Google Gemini](https://deepmind.google/technologies/gemini/)
-- [Oracle GenAI](https://www.oracle.com/artificial-intelligence/)
-- And 100+ more providers

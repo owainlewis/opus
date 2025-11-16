@@ -15,7 +15,6 @@ max_retry_attempts: 2
 
 # UI settings
 show_tool_output: false
-show_reasoning_content: true
 
 # Tools configuration
 tools:

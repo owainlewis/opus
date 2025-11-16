@@ -1,151 +1,53 @@
-# Sub-Agent System
+# Sub-agents
 
-The sub-agent system allows Opus to execute multiple independent tasks in parallel or sequentially using fully-capable agent instances. This is particularly useful for log analysis, code review, and any scenario where work can be split into parallel subtasks.
+The sub-agent system lets Opus split work into multiple independent tasks that can run in parallel. This is useful when you have several things that can be done at the same time, like analyzing multiple log files or reviewing several code modules.
 
-## Overview
+## What are Sub-agents?
 
-**Tool Name:** `run_subagents`
+A sub-agent is a separate instance of Opus that handles one specific task. Each sub-agent has access to all the same tools as the main agent (reading files, running commands, etc.) and can work independently. The main agent can spawn multiple sub-agents, let them work in parallel, and then collect all their results.
 
-**Purpose:** Execute N independent tasks using separate OpusAgent instances, each with full access to all tools.
+For example, if you need to analyze three log files for errors, the main agent can spawn three sub-agents, give each one a log file to analyze, and get all three analyses back at once instead of doing them one at a time.
 
-**Key Features:**
-- ✅ Parallel or sequential execution
-- ✅ Full agent capabilities per sub-agent (Read, Grep, Bash, etc.)
-- ✅ Flexible context passing (files, URLs, or direct text)
-- ✅ Automatic result aggregation
-- ✅ Graceful error handling (failed tasks don't block others)
-- ✅ Recursion prevention (sub-agents can't spawn more sub-agents)
+## When to Use Sub-agents
 
-## When to Use
+Sub-agents are most useful when you have multiple independent tasks that don't depend on each other.
 
-### Ideal Use Cases
-- **Log analysis**: Analyze multiple log files in parallel
-- **Code review**: Review multiple files/modules simultaneously
-- **Data processing**: Process datasets by splitting into chunks
-- **Multi-file search**: Search across multiple files concurrently
-- **Parallel testing**: Test multiple scenarios simultaneously
+Good use cases include analyzing multiple log files in parallel, reviewing several code files at once, processing data in chunks, searching across multiple files simultaneously, or testing different scenarios in parallel.
 
-### Not Recommended For
-- Single, indivisible tasks
-- Tasks that require shared state
-- Simple queries that don't benefit from parallelization
+Sub-agents are not helpful for single tasks that can't be broken down, for tasks that share state or need to coordinate with each other, or for simple operations that are already fast.
 
-## Tool Interface
+## Using Sub-agents
 
-### Basic Usage
+You can ask Opus to use sub-agents in natural language:
 
-#### Simple Prompts
-```python
-{
-    "tasks": [
-        "Analyze error.log and count ERROR lines",
-        "Check access.log for suspicious activity",
-        "Review app.log for performance issues"
-    ],
-    "execution_mode": "parallel"  # or "sequential"
-}
+```bash
+opus -m "Analyze error.log, access.log, and api.log in parallel and tell me the most critical issues"
 ```
 
-#### Structured Tasks with Context
+Opus will recognize that these are independent tasks and automatically use the `run_subagents` tool to process them in parallel.
 
-##### File Context
-```python
-{
-    "tasks": [
-        {
-            "prompt": "Find all critical errors and their timestamps",
-            "context": {"type": "file", "path": "/var/log/app/error.log"}
-        },
-        {
-            "prompt": "Identify slow requests (>5s)",
-            "context": {"type": "file", "path": "/var/log/app/api.log"}
-        }
-    ]
-}
+You can also be explicit about using sub-agents:
+
+```bash
+opus -m "Use sub-agents to review src/auth.py, src/db.py, and src/api.py for security issues"
 ```
 
-##### URL Context
-```python
-{
-    "tasks": [
-        {
-            "prompt": "Summarize the key features",
-            "context": {"type": "url", "url": "https://example.com/docs"}
-        }
-    ]
-}
-```
+## How It Works
 
-##### Direct Text Context
-```python
-{
-    "tasks": [
-        {
-            "prompt": "Count how many errors are in this log",
-            "context": "ERROR: Connection failed\nINFO: Retry...\nERROR: Timeout"
-        }
-    ]
-}
-```
+When Opus uses sub-agents, it creates separate agent instances for each task. Each sub-agent gets its own task description and any necessary context (like file contents or data to analyze). The sub-agents run independently, using all the same tools available to the main agent. When all sub-agents finish, the main agent collects their results and presents a combined summary.
 
-##### Multiple Files
-```python
-{
-    "tasks": [
-        {
-            "prompt": "Review all these files for security issues",
-            "context": {
-                "type": "files",
-                "paths": ["auth.py", "db.py", "api.py"]
-            }
-        }
-    ]
-}
-```
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `tasks` | Array | Yes | - | List of tasks (strings or objects with prompt/context) |
-| `execution_mode` | String | No | `"parallel"` | Execute tasks in parallel or sequential |
-| `max_turns` | Integer | No | 15 | Maximum iterations per sub-agent |
-
-### Response Format
-
-```python
-{
-    "output": "Formatted summary of all sub-agent results",
-    "metadata": {
-        "execution_summary": {
-            "total_tasks": 3,
-            "successful": 3,
-            "failed": 0,
-            "execution_time_seconds": 12.4,
-            "execution_mode": "parallel"
-        },
-        "results": [
-            {
-                "task_id": 0,
-                "prompt": "Analyze error.log...",
-                "status": "success",
-                "output": "Found 15 errors...",
-                "execution_time": 4.2
-            },
-            // ... more results
-        ]
-    }
-}
-```
+By default, sub-agents run in parallel to save time. You can also request sequential execution if tasks need to run in a specific order, though this is less common.
 
 ## Configuration
 
-Add to your `config.yaml`:
+You can configure sub-agent behavior in your config file:
 
 ```yaml
-# Sub-agent settings
-subagent_max_turns: 15       # Max iterations per sub-agent (vs 25 for parent)
-subagent_timeout: 300        # 5 minutes per sub-agent
+# Maximum conversation turns for each sub-agent
+subagent_max_turns: 15
+
+# Timeout for sub-agent execution (seconds)
+subagent_timeout: 300
 
 tools:
   run_subagents:
@@ -153,127 +55,81 @@ tools:
     approval: false  # Auto-approve for efficiency
 ```
 
+Sub-agents have a lower turn limit (15 by default) compared to the main agent (25 by default) since they typically handle simpler, focused tasks. The timeout prevents any single sub-agent from running too long.
+
 ## Examples
 
-### Example 1: Parallel Log Analysis
-
+**Parallel log analysis:**
 ```bash
-opus -m "Use run_subagents to analyze app.log, api.log, and worker.log in parallel.
+opus -m "Analyze app.log, api.log, and worker.log in parallel.
 For each, count errors and identify the most critical issue."
 ```
 
-The agent will:
-1. Detect multiple independent analysis tasks
-2. Call `run_subagents` with 3 tasks
-3. Each sub-agent reads its log file and analyzes it
-4. Results are aggregated and summarized
+Each log file gets its own sub-agent. All three analyses happen at the same time, and you get a combined report with findings from all three logs.
 
-### Example 2: Code Review
-
+**Code review:**
 ```bash
 opus -m "Review src/auth.py, src/db.py, and src/api.py for security vulnerabilities.
 Use sub-agents to review them in parallel."
 ```
 
-### Example 3: Sequential Data Processing
+Each file gets reviewed independently by its own sub-agent, all running at the same time.
 
-```python
-await execute_run_subagents({
-    "tasks": [
-        "Process batch 1: records 0-1000",
-        "Process batch 2: records 1000-2000",
-        "Process batch 3: records 2000-3000"
-    ],
-    "execution_mode": "sequential",  # Process in order
-    "max_turns": 10  # Simple processing tasks
-})
+**Data processing:**
+```bash
+opus -m "Process these three data files in parallel: data1.csv, data2.csv, data3.csv.
+Calculate summary statistics for each."
 ```
 
-## Architecture
+Each data file gets processed by a separate sub-agent.
 
-### How It Works
+## Context Passing
 
-1. **Tool Invocation**: Parent agent calls `run_subagents` with task list
-2. **Context Preparation**: Files/URLs are loaded into text context
-3. **Agent Spawning**: N independent `OpusAgent` instances created
-4. **Parallel Execution**: Tasks run via `asyncio.gather()` (or sequentially)
-5. **Result Aggregation**: All results combined into formatted summary
-6. **Return to Parent**: Parent agent receives aggregated results
+Sub-agents can receive context in several ways. You can give them files to read by specifying file paths. You can provide URLs that they should fetch. Or you can pass text data directly in the task description.
 
-### Sub-Agent Constraints
+The main agent handles loading files or URLs and passes the content to sub-agents as part of their initial context. This means the sub-agent starts with the information it needs already available.
 
-- **Max iterations**: Configurable, defaults to 15 (vs parent's 25)
-- **No recursion**: `run_subagents` tool is filtered out for sub-agents
-- **Timeout**: 5 minutes per sub-agent (configurable)
-- **Isolation**: Each sub-agent has independent message history
-- **Full tools**: Access to all other tools (Read, Bash, Grep, etc.)
+## Limitations
 
-### Context Passing
+Sub-agents cannot spawn more sub-agents. This prevents infinite recursion and keeps the system manageable. If a sub-agent tries to use the `run_subagents` tool, it won't have access to it.
 
-Sub-agents receive context via **initial message history**:
+Each sub-agent runs independently and cannot communicate with other sub-agents. They don't share state or coordinate with each other. This is by design since sub-agents are meant for truly independent tasks.
 
-```python
-[
-    {"role": "user", "content": "Here is the context: <file contents>"},
-    {"role": "user", "content": "<actual task prompt>"}
-]
-```
-
-This approach:
-- Provides natural conversation flow
-- Doesn't consume tool call quota
-- Allows large context (within model limits)
+Sub-agents have a conversation limit (15 turns by default) and a timeout (5 minutes by default). This prevents any single sub-agent from consuming too many resources.
 
 ## Performance Considerations
 
-### Parallel Execution
-- **Best for**: Independent tasks without dependencies
-- **Throughput**: N tasks complete in ~time of slowest task
-- **Resource usage**: N concurrent LLM API calls
+Running sub-agents in parallel means making multiple LLM API calls at the same time. This is faster than sequential execution, but uses more API quota and costs more tokens overall. Each sub-agent has its own conversation with the full system prompt and tool definitions, so token usage scales with the number of sub-agents.
 
-### Sequential Execution
-- **Best for**: Dependent tasks or rate-limited scenarios
-- **Throughput**: Sum of all task times
-- **Resource usage**: 1 LLM API call at a time
+For example, if three sub-agents each use 5,000 tokens, that's 15,000 tokens total. Sequential execution would use roughly the same amount but take three times as long. Parallel execution trades money (tokens) for time (speed).
 
-### Token Usage
-- Each sub-agent is a full conversation (system prompt + tools + messages)
-- Large contexts count against each sub-agent's token limit
-- Consider breaking very large files into smaller chunks
+Keep this in mind when deciding whether to use sub-agents. For large numbers of sub-agents (10+), the token cost can add up quickly.
 
-## Troubleshooting
+## Sequential Execution
 
-### "Sub-agent timed out"
-- Increase `subagent_timeout` in config
-- Reduce `max_turns` for simpler tasks
-- Break complex tasks into smaller pieces
+While parallel execution is the default, you can request sequential execution if tasks need to happen in order:
 
-### "Tool 'run_subagents' not found"
-- Ensure `run_subagents` is in `BUILTIN_TOOLS` (should be by default)
-- Check config doesn't explicitly disable it
-- Verify you're using latest version of Opus
+```bash
+opus -m "Process these files sequentially: first validate data.json,
+then transform it with transform.py, then upload the result"
+```
 
-### Sub-agents can't spawn more sub-agents
-- **This is intentional** to prevent infinite recursion
-- Sub-agents automatically have `run_subagents` filtered out
-- Design your tasks to be executable by a single agent level
+Sequential execution is useful when later tasks depend on earlier ones, or when you want to limit API rate usage.
 
-## Implementation Details
+## Error Handling
 
-### Files Modified
-- `src/opus/tools/run_subagents.py` - Core tool implementation
-- `src/opus/agent.py` - Sub-agent support (`is_subagent`, `initial_messages`)
-- `src/opus/tools/loader.py` - Tool registration
-- `src/opus/config.py` - Built-in tool list + config options
+If a sub-agent fails or times out, the other sub-agents continue running. The main agent collects results from successful sub-agents and reports which ones failed. This means one failure doesn't block the entire operation.
 
-### Key Functions
-- `execute_run_subagents(args)` - Main entry point
-- `_spawn_subagent(task_spec)` - Create and run one sub-agent
-- `_prepare_context(context_spec)` - Load files/URLs into text
-- `_aggregate_results(results)` - Format summary output
+You'll get partial results from the sub-agents that succeeded, along with information about any that failed.
 
-## See Also
+## Tips
 
-- [Tool Development Guide](./tools.md)
-- [Configuration Reference](./configuration.md)
-- [Examples](../examples/)
+Start with a clear description of each independent task. The clearer you are about what each sub-agent should do, the better results you'll get.
+
+Use sub-agents when tasks truly are independent. If tasks need to share information or build on each other, sequential execution by the main agent is usually better.
+
+Be aware of token costs with large numbers of sub-agents. Three to five sub-agents is usually fine, but ten or twenty can get expensive.
+
+Consider timeouts for long-running tasks. If sub-agents might take a while (like analyzing large files), increase the `subagent_timeout` setting.
+
+Remember that sub-agents can't spawn more sub-agents. Design your tasks so they can be completed by a single level of sub-agents.
