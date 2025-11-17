@@ -55,6 +55,10 @@ tools:
     enabled: true
     approval: false
 
+  ask_approval:
+    enabled: true
+    approval: false  # This tool prompts the user itself
+
 # Custom Tools
 # Reference external tool definitions
 #

@@ -239,6 +239,15 @@ class ToolLoader:
             logger.info(f"Loaded built-in tool '{tool_name}'")
             return tool_def
 
+        # Import ask_approval tool definition if needed
+        if tool_name == "ask_approval":
+            from opus.tools.ask_approval import ASK_APPROVAL_TOOL_DEFINITION, execute_ask_approval
+            tool_def = ASK_APPROVAL_TOOL_DEFINITION.copy()
+            tool_def["tool_path"] = str(Path.cwd())
+            tool_def["python_callable"] = execute_ask_approval  # Mark as Python callable
+            logger.info(f"Loaded built-in tool '{tool_name}'")
+            return tool_def
+
         # Built-in script-based tools
         BUILTIN_TOOLS = {
             "bash": {
