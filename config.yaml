@@ -1,6 +1,6 @@
 provider: anthropic
 model: claude-haiku-4-5
-show_tool_output: false
+show_tool_output: true
 
 # Built-in tools (bash, file_read, file_write, file_edit, fetch_url, run_recipe, get_current_time)
 # are always enabled by default. You can optionally configure approval settings or disable them here.
