@@ -248,6 +248,7 @@ class ToolExecutionStatus:
                 pass
 
         if self.live:
+            self.live.update(Text(""))  # Clear the display
             self.live.stop()
 
         return False
@@ -265,6 +266,15 @@ class ThinkingStatus:
     async def _update_status(self):
         """Background task to update elapsed time"""
         theme = get_current_theme()
+
+        # Create and start the Live display in the update task to avoid race conditions
+        self.live = Live(
+            Text("⠋ Thinking… 0s", style=f"{theme.dim} {theme.spinner}"),
+            console=console,
+            refresh_per_second=10
+        )
+        self.live.start()
+
         idx = 0
         while self.running:
             elapsed = int(time.time() - self.start_time)
@@ -275,12 +285,11 @@ class ThinkingStatus:
             await asyncio.sleep(0.1)
 
     async def __aenter__(self):
-        theme = get_current_theme()
         self.start_time = time.time()
         self.running = True
-        self.live = Live(Text("⠋ Thinking… 0s", style=f"{theme.dim} {theme.spinner}"), console=console, refresh_per_second=10)
-        self.live.start()
         self.update_task = asyncio.create_task(self._update_status())
+        # Give the task a moment to start and create the Live display
+        await asyncio.sleep(0.01)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -292,6 +301,7 @@ class ThinkingStatus:
             except asyncio.CancelledError:
                 pass
         if self.live:
+            self.live.update(Text(""))  # Clear the display
             self.live.stop()
         return False
 

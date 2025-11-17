@@ -1,5 +1,5 @@
-provider: litellm
-model: gpt-4.1-mini
+provider: anthropic
+model: claude-haiku-4-5
 show_tool_output: false
 
 # Built-in tools (bash, file_read, file_write, file_edit, fetch_url, run_recipe, get_current_time)

@@ -2,7 +2,7 @@
 
 import logging
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 from opus.providers.base import LLMProvider
 
@@ -20,11 +20,9 @@ class AnthropicProvider(LLMProvider):
     - Vision/multimodal support
     - Direct access to latest Anthropic features
 
-    Supported models:
-    - claude-sonnet-4-20250514 (Claude Sonnet 4)
-    - claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet)
-    - claude-3-opus-20240229 (Claude 3 Opus)
-    - claude-3-haiku-20240307 (Claude 3 Haiku)
+    Models:
+    - claude-sonnet-4-5
+    - claude-haiku-4-5
     """
 
     def __init__(self, config, tools: List[Dict], system_prompt: str):
@@ -65,11 +63,13 @@ class AnthropicProvider(LLMProvider):
         self.anthropic_tools = []
         if self.tools:
             for tool in self.tools:
-                self.anthropic_tools.append({
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "input_schema": tool["parameters"],
-                })
+                self.anthropic_tools.append(
+                    {
+                        "name": tool["name"],
+                        "description": tool["description"],
+                        "input_schema": tool["parameters"],
+                    }
+                )
 
         # Prepare system prompt with caching if enabled
         self.system_blocks = self._prepare_system_prompt()
@@ -139,20 +139,19 @@ class AnthropicProvider(LLMProvider):
             elif role == "user":
                 content = msg.get("content", "")
 
-                # If we have pending tool results, include them first
+                # If we have pending tool results, combine them with user content
                 if pending_tool_results:
-                    # Tool results must be in a user message in Anthropic
-                    anthropic_messages.append({
-                        "role": "user",
-                        "content": pending_tool_results
-                    })
+                    # Tool results and user content must be in the SAME user message
+                    content_blocks = pending_tool_results.copy()
+                    if content:
+                        content_blocks.append({"type": "text", "text": content})
+                    anthropic_messages.append(
+                        {"role": "user", "content": content_blocks}
+                    )
                     pending_tool_results = []
-
-                # Add the user message
-                anthropic_messages.append({
-                    "role": "user",
-                    "content": content
-                })
+                else:
+                    # No tool results, just add the user message as plain text
+                    anthropic_messages.append({"role": "user", "content": content})
 
             elif role == "assistant":
                 # Extract content and tool calls
@@ -163,25 +162,23 @@ class AnthropicProvider(LLMProvider):
                 content_blocks = []
 
                 if content:
-                    content_blocks.append({
-                        "type": "text",
-                        "text": content
-                    })
+                    content_blocks.append({"type": "text", "text": content})
 
                 # Add tool use blocks
                 for tool_call in tool_calls:
-                    content_blocks.append({
-                        "type": "tool_use",
-                        "id": tool_call["id"],
-                        "name": tool_call["name"],
-                        "input": tool_call["arguments"]
-                    })
+                    content_blocks.append(
+                        {
+                            "type": "tool_use",
+                            "id": tool_call["id"],
+                            "name": tool_call["name"],
+                            "input": tool_call["arguments"],
+                        }
+                    )
 
                 if content_blocks:
-                    anthropic_messages.append({
-                        "role": "assistant",
-                        "content": content_blocks
-                    })
+                    anthropic_messages.append(
+                        {"role": "assistant", "content": content_blocks}
+                    )
 
             elif role == "tool":
                 # Tool results are added to pending list
@@ -189,18 +186,17 @@ class AnthropicProvider(LLMProvider):
                 tool_call_id = msg.get("tool_call_id")
                 content = msg.get("content", "")
 
-                pending_tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_call_id,
-                    "content": content
-                })
+                pending_tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_call_id,
+                        "content": content,
+                    }
+                )
 
         # If there are remaining tool results, add them as a final user message
         if pending_tool_results:
-            anthropic_messages.append({
-                "role": "user",
-                "content": pending_tool_results
-            })
+            anthropic_messages.append({"role": "user", "content": pending_tool_results})
 
         return anthropic_messages
 
@@ -251,11 +247,9 @@ class AnthropicProvider(LLMProvider):
             if block.type == "text":
                 message_text += block.text
             elif block.type == "tool_use":
-                tool_calls.append({
-                    "id": block.id,
-                    "name": block.name,
-                    "arguments": block.input
-                })
+                tool_calls.append(
+                    {"id": block.id, "name": block.name, "arguments": block.input}
+                )
 
         # Determine if conversation is done
         done = response.stop_reason == "end_turn" and not tool_calls
@@ -287,7 +281,9 @@ class AnthropicProvider(LLMProvider):
 
         return message
 
-    def format_tool_result(self, tool_call_id: str, tool_name: str, result: Any) -> Dict:
+    def format_tool_result(
+        self, tool_call_id: str, tool_name: str, result: Any
+    ) -> Dict:
         """
         Format tool execution result for Anthropic.
 
