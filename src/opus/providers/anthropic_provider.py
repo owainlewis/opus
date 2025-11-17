@@ -154,6 +154,14 @@ class AnthropicProvider(LLMProvider):
                     anthropic_messages.append({"role": "user", "content": content})
 
             elif role == "assistant":
+                # If we have pending tool results, flush them first
+                # This ensures tool_use blocks are immediately followed by tool_result blocks
+                if pending_tool_results:
+                    anthropic_messages.append(
+                        {"role": "user", "content": pending_tool_results}
+                    )
+                    pending_tool_results = []
+
                 # Extract content and tool calls
                 content = msg.get("content", "")
                 tool_calls = msg.get("tool_calls", [])
