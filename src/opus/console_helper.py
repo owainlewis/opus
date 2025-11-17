@@ -92,7 +92,6 @@ def print_tool_result(result: Any, max_lines: int = 5):
     text.append("  • ", style=theme.success)
     text.append("Done", style=f"{theme.dim}")
     console.print(text)
-    console.print()  # Add spacing after tool execution
 
 
 def print_tool_error(error: str, will_retry: bool = False):
