@@ -1,8 +1,12 @@
 """Base LLM provider interface"""
 
+import inspect
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
+
+logger = logging.getLogger(__name__)
 
 
 class LLMProvider(ABC):
@@ -11,6 +15,15 @@ class LLMProvider(ABC):
 
     Defines the interface that all LLM providers must implement.
     Handles tool/function calling in a provider-agnostic way.
+
+    IMPORTANT: All providers MUST use async clients to avoid blocking the event loop.
+    Using synchronous API clients will block async operations like status spinners.
+
+    Example:
+        ✓ CORRECT:   from anthropic import AsyncAnthropic
+        ✓ CORRECT:   from openai import AsyncOpenAI
+        ✗ INCORRECT: from anthropic import Anthropic (blocks event loop)
+        ✗ INCORRECT: from openai import OpenAI (blocks event loop)
     """
 
     def __init__(self, model: str, tools: List[Dict], system_prompt: str):
@@ -26,6 +39,7 @@ class LLMProvider(ABC):
         self.tools = tools
         self.system_prompt = system_prompt
         self._setup()
+        self._validate_async_client()
 
     @abstractmethod
     def _setup(self):
@@ -34,8 +48,43 @@ class LLMProvider(ABC):
 
         Called after __init__ to initialize clients and convert tools
         to provider-specific format.
+
+        CRITICAL: You MUST initialize an ASYNC client here, not a sync client.
+        Using a synchronous client will block the event loop and break UI elements
+        like progress spinners.
+
+        Example:
+            ✓ self.client = AsyncAnthropic(api_key=key)  # Correct
+            ✗ self.client = Anthropic(api_key=key)       # Wrong - blocks event loop!
         """
         pass
+
+    def _validate_async_client(self):
+        """
+        Validate that the provider is using async patterns.
+
+        Checks if the client has async methods and warns if sync methods are detected.
+        This helps catch the common mistake of using sync clients in async code.
+        """
+        if not hasattr(self, 'client'):
+            return  # Some providers might not use a client attribute
+
+        client = self.client
+        client_class_name = client.__class__.__name__
+
+        # Check for common sync client patterns
+        sync_patterns = ['Anthropic', 'OpenAI', 'Client']
+        async_patterns = ['Async', 'async']
+
+        # Warn if the class name looks like a sync client
+        if any(pattern in client_class_name for pattern in sync_patterns):
+            if not any(pattern in client_class_name for pattern in async_patterns):
+                logger.warning(
+                    f"⚠️  Provider {self.__class__.__name__} may be using a synchronous client "
+                    f"({client_class_name}). This can block the event loop and break UI elements "
+                    f"like progress spinners. Consider using an async client instead "
+                    f"(e.g., AsyncAnthropic, AsyncOpenAI)."
+                )
 
     @abstractmethod
     async def call(self, messages: List[Dict]) -> Dict:
@@ -51,6 +100,11 @@ class LLMProvider(ABC):
                 - tool_calls: List of tool calls (if any)
                 - done: Boolean indicating if conversation is complete
                 - raw_message: Original provider response
+
+        CRITICAL: When calling your API client, you MUST use 'await' to avoid
+        blocking the event loop:
+            ✓ response = await self.client.messages.create(...)  # Correct
+            ✗ response = self.client.messages.create(...)        # Wrong - blocks!
         """
         pass
 

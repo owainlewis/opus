@@ -51,13 +51,13 @@ class AnthropicProvider(LLMProvider):
     def _setup(self):
         """Initialize Anthropic client and convert tools"""
         try:
-            from anthropic import Anthropic
+            from anthropic import AsyncAnthropic
         except ImportError:
             raise ImportError(
                 "Anthropic SDK not installed. Install with: pip install opus[anthropic]"
             )
 
-        self.client = Anthropic(api_key=self.api_key)
+        self.client = AsyncAnthropic(api_key=self.api_key)
 
         # Convert tools to Anthropic format
         self.anthropic_tools = []
@@ -234,7 +234,7 @@ class AnthropicProvider(LLMProvider):
 
         # Call Anthropic API
         try:
-            response = self.client.messages.create(**request_params)
+            response = await self.client.messages.create(**request_params)
         except Exception as e:
             logger.error(f"Anthropic API call failed: {e}")
             raise

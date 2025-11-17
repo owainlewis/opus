@@ -217,7 +217,7 @@ class ToolExecutionStatus:
         theme = get_current_theme()
 
         self.live = Live(
-            Text("", style=f"{theme.dim} {theme.spinner}"),
+            Text(f"  {SPINNER_FRAMES[0]} Executing… 0s", style=f"{theme.dim} {theme.spinner}"),
             console=console,
             refresh_per_second=10
         )
@@ -265,11 +265,11 @@ class ThinkingStatus:
 
     async def _update_status(self):
         """Background task to update elapsed time"""
+        # Create and start Live display in the same task that will update it
         theme = get_current_theme()
 
-        # Create and start the Live display in the update task to avoid race conditions
         self.live = Live(
-            Text("⠋ Thinking… 0s", style=f"{theme.dim} {theme.spinner}"),
+            Text(f"{SPINNER_FRAMES[0]} Thinking… 0s", style=f"{theme.dim} {theme.spinner}"),
             console=console,
             refresh_per_second=10
         )
@@ -287,8 +287,10 @@ class ThinkingStatus:
     async def __aenter__(self):
         self.start_time = time.time()
         self.running = True
+        # Create the update task - it will create and manage Live display
         self.update_task = asyncio.create_task(self._update_status())
-        # Give the task a moment to start and create the Live display
+        # Give the task a chance to start and create the Live display
+        # Need a small real delay to ensure the display is actually started
         await asyncio.sleep(0.01)
         return self
 
