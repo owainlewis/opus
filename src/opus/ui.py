@@ -13,11 +13,6 @@ __version__ = "0.1.0"
 
 
 class OpusUI:
-    """
-    Ultra-minimal terminal UI for Opus.
-
-    Matches the elegant spacing and layout from the reference design.
-    """
 
     def __init__(self, model: str, provider: str, tools: List[Dict], failed_tools: Dict[str, str] = None):
         self.model = model
