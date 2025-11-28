@@ -1,5 +1,7 @@
 # Opus
 
+![Opus Preview](assets/Screenshot%202025-11-28%20at%2023.09.31.png)
+
 Opus is an AI-powered automation agent for your terminal. It turns any script into an intelligent tool through simple configuration, letting you chain together complex workflows with natural language.
 
 **Key Features:**
