@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -19,6 +19,9 @@ from opus.console_helper import (
     ToolExecutionStatus,
     ThinkingStatus,
 )
+
+if TYPE_CHECKING:
+    from opus.tui import OpusTUI
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -52,6 +55,7 @@ class OpusAgent:
         self.config = OpusConfig.from_yaml(config_path)
         self.is_subagent = is_subagent
         self.messages = []
+        self.ui: Optional["OpusTUI"] = None  # Optional TUI reference for display
 
         # Initialize tool executor with default timeout
         self.executor = ToolExecutor(timeout=self.config.default_timeout)
@@ -129,6 +133,19 @@ class OpusAgent:
             console.print("  [dim]⎿ Cancelled[/dim]")
             return False
 
+    def _format_tool_args_display(self, tool_args: Dict[str, Any]) -> str:
+        """Format tool arguments for display."""
+        if not tool_args:
+            return ""
+        parts = []
+        for key, value in tool_args.items():
+            # Truncate long values
+            str_value = str(value)
+            if len(str_value) > 100:
+                str_value = str_value[:100] + "..."
+            parts.append(f"{key}={str_value}")
+        return ", ".join(parts)
+
     async def _execute_single_tool(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
         """
         Execute a single tool call and return result message.
@@ -147,8 +164,12 @@ class OpusAgent:
         # Determine if approval is needed
         needs_approval = self._needs_approval(tool_name)
 
-        # Always show tool calls so users can see what's being executed
-        print_tool_call(tool_name, tool_args, needs_approval=needs_approval)
+        # Show tool call via UI or console
+        if self.ui:
+            args_display = self._format_tool_args_display(tool_args)
+            self.ui.add_tool_call(tool_name, args_display, status="running")
+        else:
+            print_tool_call(tool_name, tool_args, needs_approval=needs_approval)
 
         try:
             # Check if approval is needed
@@ -156,6 +177,8 @@ class OpusAgent:
                 approved = self._prompt_user_approval(tool_name, tool_args)
                 if not approved:
                     logger.info(f"Tool {tool_name} execution rejected by user")
+                    if self.ui:
+                        self.ui.update_tool_status(tool_name, "rejected")
                     error_result = {"error": "Tool execution rejected by user"}
                     result_message = self.llm.format_tool_result(
                         tool_call["id"], tool_name, error_result
@@ -177,9 +200,12 @@ class OpusAgent:
                 )
                 raise ValueError(error_msg)
 
-            # Execute tool with progress indicator
-            async with ToolExecutionStatus(tool_name, tool_args):
+            # Execute tool (UI handles its own status, console uses context manager)
+            if self.ui:
                 result = await self.executor.execute_tool(tool, tool_args)
+            else:
+                async with ToolExecutionStatus(tool_name, tool_args):
+                    result = await self.executor.execute_tool(tool, tool_args)
 
             logger.info(f"Tool {tool_name} completed successfully")
 
@@ -187,7 +213,9 @@ class OpusAgent:
             self.execution_tracker.record_success(tool_name)
 
             # Show completion
-            if self.config.show_tool_output:
+            if self.ui:
+                self.ui.update_tool_status(tool_name, "done")
+            elif self.config.show_tool_output:
                 print_tool_result(result)
 
             # Format result for LLM
@@ -205,7 +233,12 @@ class OpusAgent:
 
             # Check if we can retry
             can_retry = self.execution_tracker.can_retry(tool_name)
-            print_tool_error(str(e), will_retry=can_retry)
+
+            # Show error via UI or console
+            if self.ui:
+                self.ui.update_tool_status(tool_name, "error", str(e))
+            else:
+                print_tool_error(str(e), will_retry=can_retry)
 
             # Format error message with recovery guidance for LLM
             error_message = tool_error.to_llm_message(
@@ -294,9 +327,12 @@ class OpusAgent:
                 iteration += 1
                 logger.info(f"Agent iteration {iteration}/{max_iterations}")
 
-                # Call LLM with thinking status indicator
-                async with ThinkingStatus():
+                # Call LLM (UI handles its own thinking indicator)
+                if self.ui:
                     response = await self.llm.call(self.messages)
+                else:
+                    async with ThinkingStatus():
+                        response = await self.llm.call(self.messages)
 
                 # Add assistant message to history
                 assistant_message = self.llm.format_assistant_message(response)

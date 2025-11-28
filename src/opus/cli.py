@@ -3,15 +3,13 @@
 import asyncio
 import logging
 import sys
-import os
 from pathlib import Path
 import click
 from rich.prompt import Prompt
-from rich.text import Text
 
 from opus.agent import OpusAgent
-from opus.console_helper import print_markdown, console, get_current_theme
-from opus.ui import create_simple_ui
+from opus.console_helper import print_markdown, console
+from opus.tui import run_tui
 
 
 def setup_logging(verbose: bool = False):
@@ -42,178 +40,18 @@ def setup_logging(verbose: bool = False):
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
-async def handle_slash_command(command: str, agent: OpusAgent) -> bool:
+def start_tui(agent: OpusAgent):
     """
-    Handle slash commands.
-
-    Args:
-        command: The command (including slash)
-        agent: The agent instance
-
-    Returns:
-        True to continue, False to exit
-    """
-    command = command.strip()
-
-    if command == "/help":
-        help_text = """
-# Commands
-
-`/help`      Show this help
-`/tools`     List available tools
-`/clear`     Clear conversation history
-`/raw <cmd>` Execute shell command directly
-`/exit`      Exit Opus
-
-Config: `~/.opus/config.yaml`
-"""
-        print_markdown(help_text)
-        return True
-
-    elif command == "/clear":
-        agent.messages.clear()
-        console.print("[dim]Conversation history cleared[/dim]")
-        return True
-
-    elif command == "/tools":
-        # Re-show tools list
-        console.print()
-        console.print(Text("Available Tools:", style="bold white"))
-        console.print()
-        for tool in agent.tools:
-            name = tool["name"]
-            desc = tool.get("description", "")
-            needs_approval = agent.config.get_tool_config(name).get("approval", False)
-
-            tool_line = Text()
-            tool_line.append(" ")
-            if needs_approval:
-                tool_line.append("● ", style="yellow")
-            else:
-                tool_line.append("● ", style="green")
-            tool_line.append(f"{name.capitalize()}", style="bold cyan")
-            tool_line.append(f" ({name})", style="dim cyan")
-            if needs_approval:
-                tool_line.append(" [approval required]", style="yellow")
-            else:
-                tool_line.append(" [auto]", style="green")
-
-            console.print(tool_line)
-            desc_line = Text()
-            desc_line.append(f"   {desc}", style="dim")
-            console.print(desc_line)
-            console.print()
-
-        # Show failed tools if any
-        failed_tools = agent.tool_loader.get_failed_tools()
-        if failed_tools:
-            console.print(Text("Failed to Load:", style="bold yellow"))
-            console.print()
-            for name, error in failed_tools.items():
-                tool_line = Text()
-                tool_line.append(" ")
-                tool_line.append("✗ ", style="red")
-                tool_line.append(f"{name.capitalize()}", style="bold red")
-                tool_line.append(f" ({name})", style="dim red")
-                console.print(tool_line)
-                desc_line = Text()
-                desc_line.append(f"   {error}", style="dim red")
-                console.print(desc_line)
-                console.print()
-
-        return True
-
-    elif command.startswith("/raw "):
-        # Execute raw command directly
-        raw_cmd = command[5:].strip()
-        if not raw_cmd:
-            console.print("[yellow]Usage: /raw <command>[/yellow]")
-            return True
-
-        console.print(f"[dim]Executing: {raw_cmd}[/dim]")
-        proc = await asyncio.create_subprocess_shell(
-            raw_cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=os.getcwd()
-        )
-
-        stdout, stderr = await proc.communicate()
-
-        if stdout:
-            console.print(stdout.decode())
-        if stderr:
-            console.print(f"[red]{stderr.decode()}[/red]")
-
-        if proc.returncode != 0:
-            console.print(f"[yellow]Exit code: {proc.returncode}[/yellow]")
-
-        return True
-
-    elif command in ["/exit", "/quit"]:
-        return False
-
-    else:
-        console.print(f"[yellow]Unknown command: {command}[/yellow]")
-        console.print("[dim]Type /help for available commands[/dim]")
-        return True
-
-
-async def repl(agent: OpusAgent):
-    """
-    Run the Read-Eval-Print Loop.
+    Start the TUI with the agent.
 
     Args:
         agent: The agent instance
     """
-    # Show the beautiful startup UI
-    ui = create_simple_ui(
+    run_tui(
+        agent=agent,
         model=agent.config.model,
         provider=agent.config.provider,
-        tools=agent.tools,
-        failed_tools=agent.tool_loader.get_failed_tools()
     )
-
-    while True:
-        try:
-            theme = get_current_theme()
-
-            # Thin separator like in the reference
-            console.rule(style=theme.border)
-            console.print()
-
-            # Get user input - minimal prompt (>:)
-            user_input = Prompt.ask(f"[{theme.prompt}]>:[/{theme.prompt}]").strip()
-
-            if not user_input:
-                continue
-
-            # Don't show user message here - it's already shown by the prompt
-            # ui.show_user_message(user_input)
-
-            # Handle slash commands
-            if user_input.startswith("/"):
-                should_continue = await handle_slash_command(user_input, agent)
-                if not should_continue:
-                    break
-                continue
-
-            # Process with agent
-            response = await agent.chat(user_input)
-
-            if response:
-                ui.show_assistant_message(response)
-
-        except KeyboardInterrupt:
-            console.print("\n[dim]Use /exit to quit[/dim]")
-            continue
-        except EOFError:
-            break
-        except Exception as e:
-            console.print(f"[red]Error: {e}[/red]")
-            logging.exception("Error in REPL")
-
-    console.print("[dim]Goodbye![/dim]")
 
 
 @click.group(invoke_without_command=True)
@@ -262,8 +100,8 @@ def cli(ctx, config: str, verbose: bool, message: str):
 
             asyncio.run(run_once())
         else:
-            # Interactive mode: start REPL
-            asyncio.run(repl(agent))
+            # Interactive mode: start TUI
+            start_tui(agent)
 
     except FileNotFoundError as e:
         console.print(f"[red]Error: Configuration file not found[/red]")
